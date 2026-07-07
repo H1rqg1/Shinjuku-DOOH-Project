@@ -116,4 +116,25 @@ public class CrowdAvatar : MonoBehaviour
             tmpNameText.text = playerName;
         }
     }
+
+    public void ApplyCostume(CostumeEntry costume)
+    {
+        if (costume == null || costume.sprite == null)
+        {
+            return;
+        }
+
+        if (spriteRenderer == null)
+        {
+            spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        }
+
+        if (spriteRenderer == null)
+        {
+            return;
+        }
+
+        spriteRenderer.sprite = costume.sprite;
+        standSprite = costume.sprite;
+    }
 }

@@ -17,6 +17,11 @@ public class AvatarCatalog : ScriptableObject
 
         foreach (var costume in costumes)
         {
+            if (costume == null || string.IsNullOrWhiteSpace(costume.id))
+            {
+                continue;
+            }
+
             if (!costumeMap.ContainsKey(costume.id))
             {
                 costumeMap.Add(costume.id, costume);
@@ -35,6 +40,13 @@ public class AvatarCatalog : ScriptableObject
     public bool TryGetCostume(string id, out CostumeEntry costume)
     {
         if (costumeMap == null) Initialize();
+
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            costume = null;
+            return false;
+        }
+
         return costumeMap.TryGetValue(id, out costume);
     }
 

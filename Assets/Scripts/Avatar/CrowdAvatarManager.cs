@@ -7,6 +7,7 @@ public class CrowdAvatarManager : MonoBehaviour
     [SerializeField] private APIManager apiManager;
     [SerializeField] private GameObject avatarPrefab;
     [SerializeField] private Transform characterRoot;
+    [SerializeField] private AvatarCatalog avatarCatalog;
 
     [Header("Display")]
     [SerializeField] private int maxAvatarCount = 30;
@@ -21,6 +22,7 @@ public class CrowdAvatarManager : MonoBehaviour
     private readonly Queue<GameObject> activeAvatarsQueue = new Queue<GameObject>();
     private readonly List<GameObject> activeUserAvatars = new List<GameObject>();
     private readonly List<GameObject> activeCpuAvatars = new List<GameObject>();
+    private bool hasWarnedMissingCatalog;
 
     public int CurrentAvatarCount => activeAvatarsQueue.Count;
     public int MaxAvatarCount => maxAvatarCount;
@@ -107,9 +109,12 @@ public class CrowdAvatarManager : MonoBehaviour
             obj.AddComponent<BillboardToCamera>();
         }
 
+        CostumeEntry costume = ResolveCostume(data, isCpuAvatar);
+
         CrowdAvatar avatarScript = obj.GetComponent<CrowdAvatar>();
         if (avatarScript != null)
         {
+            avatarScript.ApplyCostume(costume);
             avatarScript.SetPlayerName(data.target_id);
         }
 
@@ -131,6 +136,39 @@ public class CrowdAvatarManager : MonoBehaviour
                 Destroy(oldestAvatar);
             }
         }
+    }
+
+    private CostumeEntry ResolveCostume(Encounter data, bool isCpuAvatar)
+    {
+        if (isCpuAvatar || data == null || string.IsNullOrWhiteSpace(data.costume_id))
+        {
+            return null;
+        }
+
+        if (avatarCatalog == null)
+        {
+            if (!hasWarnedMissingCatalog)
+            {
+                Debug.LogWarning("AvatarCatalog is not assigned. Avatar prefab sprite will be used.");
+                hasWarnedMissingCatalog = true;
+            }
+
+            return null;
+        }
+
+        if (!avatarCatalog.TryGetCostume(data.costume_id, out CostumeEntry costume))
+        {
+            Debug.LogWarning($"Costume id is not registered in AvatarCatalog: {data.costume_id}");
+            return null;
+        }
+
+        if (costume == null || costume.sprite == null)
+        {
+            Debug.LogWarning($"Costume sprite is not assigned: {data.costume_id}");
+            return null;
+        }
+
+        return costume;
     }
 
     private void EnsureCpuAvatars()

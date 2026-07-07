@@ -192,6 +192,8 @@ GameObject:
   - component: {fileID: 9178122973614905455}
   - component: {fileID: 6874450447031646288}
   - component: {fileID: 6877167927120562219}
+  - component: {fileID: -5699869360172255641}
+  - component: {fileID: -1987457845291937795}
   m_Layer: 0
   m_Name: Avatar
   m_TagString: Untagged
@@ -295,3 +297,34 @@ MonoBehaviour:
   walkRadius: 4
   minWaitTime: 1
   maxWaitTime: 4
+--- !u!114 &-5699869360172255641
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8951777557338941201}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 456bc79a21d67714280d49f516c95304, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AvatarView
+  spriteRenderer: {fileID: 6874450447031646288}
+  labelText: {fileID: 0}
+  tmpLabelText: {fileID: 0}
+  fadeSeconds: 1
+  floatAmplitude: 0.15
+  floatSpeed: 2
+--- !u!114 &-1987457845291937795
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8951777557338941201}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e0bd05715f047c48a1fcd47fd4f0257, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BillboardToCamera
+  targetCamera: {fileID: 0}
