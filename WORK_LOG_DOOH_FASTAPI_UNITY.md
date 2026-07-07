@@ -74,3 +74,22 @@ Invoke-RestMethod `
 - `server/data/encounters.json` は実行時に自動生成されるため、Git管理対象から外している。
 - Unity側のPrefabやScene参照は、Unity Editorで一度開いて必要なInspector項目を確認すること。
 - 別PC接続時はWindows Defender FirewallやWi-Fiの端末間通信制限を確認すること。
+
+## 2026-07-08 追加実装: 検出人数と現在時刻表示
+
+- FastAPIに `GET /stats` を追加した。
+- `/stats` は日本時間の今日分だけを対象に、`daily_detected_count` と `daily_encounter_count` を返す。
+- `timestamp` は `Asia/Tokyo` に変換して日付判定する。壊れたtimestampや空timestampは今日分から除外する。
+- `target_id` があればそれをユニーク人数のキーにし、なければ `my_id` を使う。今日分に有効なIDがない場合はイベント数を人数として返す。
+- `time_jst` はサーバー側の日本時間を `HH:mm` 形式で返す。
+- Windows環境向けに `requirements.txt` へ `tzdata` を追加した。
+- Unity側に `Assets/Scripts/UI/DOOHStatusDisplay.cs` を追加し、TextMeshPro UIへ「本日の検出人数」と「現在時刻」を表示できるようにした。
+- サーバー未起動や通信失敗時はUnityを止めず、ConsoleにWarningを出す。
+
+確認URL:
+
+```text
+http://127.0.0.1:8000/stats
+```
+
+Unity側では `DOOHStatusDisplay` に `DetectedCountText` と `CurrentTimeText` を割り当てる。

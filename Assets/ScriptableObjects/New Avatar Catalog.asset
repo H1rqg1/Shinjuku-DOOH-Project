@@ -13,10 +13,24 @@ MonoBehaviour:
   m_Name: New Avatar Catalog
   m_EditorClassIdentifier: Assembly-CSharp::AvatarCatalog
   costumes:
-  - id: 
-    displayName: 
+  - id: costume_fashion01
+    displayName: fashion01
     spriteAddress: 
-    sprite: {fileID: 0}
+    standSprite: {fileID: 21300000, guid: 10d39a0fe0fdef64aa3547e802c6643e, type: 3}
+    walkSprite: {fileID: 21300000, guid: cbb7876f0df1f0048b7def01bb15c71e, type: 3}
+    sitSprite: {fileID: 21300000, guid: fead98183d45c154ca93ed1d1a253dd7, type: 3}
+  - id: costume_fashion02
+    displayName: fashion02
+    spriteAddress: 
+    standSprite: {fileID: 21300000, guid: a3a488e01932c3748bf216d845243871, type: 3}
+    walkSprite: {fileID: 21300000, guid: 03932e31ee55aca4d961f50007895de5, type: 3}
+    sitSprite: {fileID: 21300000, guid: 56d4190642cb82b43bf02ddf872ddb37, type: 3}
+  - id: costume_fashion03
+    displayName: fashion03
+    spriteAddress: 
+    standSprite: {fileID: 21300000, guid: 088da0c7c4d2c3e4687cca263b7f52fa, type: 3}
+    walkSprite: {fileID: 21300000, guid: 52fda7db0c6d44c4b88cae3aac03f7f7, type: 3}
+    sitSprite: {fileID: 21300000, guid: 6951a3bda400c6240b4a1c45c681bfb3, type: 3}
   messages:
   - id: 
     text: 

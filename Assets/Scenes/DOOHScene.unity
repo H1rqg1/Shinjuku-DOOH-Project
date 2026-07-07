@@ -577,7 +577,7 @@ MonoBehaviour:
   apiManager: {fileID: 2091138481}
   avatarPrefab: {fileID: 8951777557338941201, guid: 805b852929880ec4da35f48b7c963764, type: 3}
   characterRoot: {fileID: 1869133560}
-  avatarCatalog: {fileID: 0}
+  avatarCatalog: {fileID: 11400000, guid: dccfe38177e7e334d97d66d6d43b67fa, type: 2}
   maxAvatarCount: 30
   showCpuAvatarsWhenEmpty: 1
   cpuAvatarCount: 5
