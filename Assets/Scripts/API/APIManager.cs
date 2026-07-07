@@ -70,7 +70,9 @@ public class APIManager : MonoBehaviour
 
     private IEnumerator FetchEncounters()
     {
-        using (UnityWebRequest request = UnityWebRequest.Get(BuildEncountersUrl()))
+        string encountersUrl = BuildEncountersUrl();
+
+        using (UnityWebRequest request = UnityWebRequest.Get(encountersUrl))
         {
             yield return request.SendWebRequest();
 
@@ -78,7 +80,7 @@ public class APIManager : MonoBehaviour
                 request.result == UnityWebRequest.Result.ProtocolError ||
                 request.result == UnityWebRequest.Result.DataProcessingError)
             {
-                Debug.LogWarning($"Encounter API request failed: {request.error}");
+                Debug.LogWarning($"Encounter API request failed: {request.error} ({encountersUrl})");
                 yield break;
             }
 
@@ -97,6 +99,16 @@ public class APIManager : MonoBehaviour
         string normalizedUrl = string.IsNullOrWhiteSpace(serverUrl)
             ? "http://127.0.0.1:8000"
             : serverUrl.TrimEnd('/');
+
+        if (normalizedUrl.EndsWith("/encounters", StringComparison.OrdinalIgnoreCase))
+        {
+            return normalizedUrl;
+        }
+
+        if (normalizedUrl.EndsWith("/encounter", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"{normalizedUrl}s";
+        }
 
         return $"{normalizedUrl}/encounters";
     }
