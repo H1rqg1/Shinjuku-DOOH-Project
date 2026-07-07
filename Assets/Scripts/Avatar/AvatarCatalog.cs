@@ -25,7 +25,10 @@ public class AvatarCatalog : ScriptableObject
             if (!costumeMap.ContainsKey(costume.id))
             {
                 costumeMap.Add(costume.id, costume);
+                continue;
             }
+
+            Debug.LogWarning($"Duplicate costume id '{costume.id}' in AvatarCatalog. The first entry will be used.");
         }
 
         foreach (var message in messages)

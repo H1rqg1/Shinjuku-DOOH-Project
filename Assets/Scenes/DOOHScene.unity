@@ -260,8 +260,8 @@ Transform:
   m_GameObject: {fileID: 368584387}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.70710677, z: -0.70710677, w: 0}
-  m_LocalPosition: {x: 0, y: 5, z: 0}
-  m_LocalScale: {x: 3, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: 9.8, z: 17}
+  m_LocalScale: {x: 6, y: 1.1075566, z: 2.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -352,13 +352,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 385364191}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.07259702, y: -0, z: -0, w: 0.99736136}
-  m_LocalPosition: {x: 0, y: 3.74, z: -13.7}
+  m_LocalRotation: {x: 0.04697011, y: -0, z: -0, w: 0.9988963}
+  m_LocalPosition: {x: 0, y: 5.59, z: -9.23}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 8.326, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 5.384, y: 0, z: 0}
 --- !u!114 &385364195
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -577,6 +577,7 @@ MonoBehaviour:
   apiManager: {fileID: 2091138481}
   avatarPrefab: {fileID: 8951777557338941201, guid: 805b852929880ec4da35f48b7c963764, type: 3}
   characterRoot: {fileID: 1869133560}
+  avatarCatalog: {fileID: 0}
   maxAvatarCount: 30
   showCpuAvatarsWhenEmpty: 1
   cpuAvatarCount: 5
@@ -689,8 +690,8 @@ Transform:
   m_GameObject: {fileID: 1351260759}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 3, y: 1, z: 2}
+  m_LocalPosition: {x: 0, y: 0, z: 6.7}
+  m_LocalScale: {x: 6, y: 1, z: 4}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}

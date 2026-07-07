@@ -12,5 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e3af796bcb2864d49b5b461a569ed9da, type: 3}
   m_Name: New Avatar Catalog
   m_EditorClassIdentifier: Assembly-CSharp::AvatarCatalog
-  costumes: []
-  messages: []
+  costumes:
+  - id: 
+    displayName: 
+    spriteAddress: 
+    sprite: {fileID: 0}
+  messages:
+  - id: 
+    text: 

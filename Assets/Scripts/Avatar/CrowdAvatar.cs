@@ -119,7 +119,7 @@ public class CrowdAvatar : MonoBehaviour
 
     public void ApplyCostume(CostumeEntry costume)
     {
-        if (costume == null || costume.sprite == null)
+        if (costume == null)
         {
             return;
         }
@@ -134,7 +134,24 @@ public class CrowdAvatar : MonoBehaviour
             return;
         }
 
-        spriteRenderer.sprite = costume.sprite;
-        standSprite = costume.sprite;
+        if (costume.standSprite != null)
+        {
+            standSprite = costume.standSprite;
+        }
+
+        if (costume.walkSprite != null)
+        {
+            walkSprite = costume.walkSprite;
+        }
+
+        if (costume.sitSprite != null)
+        {
+            sitSprite = costume.sitSprite;
+        }
+
+        if (standSprite != null)
+        {
+            spriteRenderer.sprite = standSprite;
+        }
     }
 }

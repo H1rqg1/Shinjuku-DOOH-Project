@@ -162,9 +162,9 @@ public class CrowdAvatarManager : MonoBehaviour
             return null;
         }
 
-        if (costume == null || costume.sprite == null)
+        if (costume == null || !costume.HasAnySprite())
         {
-            Debug.LogWarning($"Costume sprite is not assigned: {data.costume_id}");
+            Debug.LogWarning($"Costume sprites are not assigned: {data.costume_id}");
             return null;
         }
 
