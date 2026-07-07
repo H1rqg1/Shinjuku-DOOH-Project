@@ -22,12 +22,20 @@ public class APIManager : MonoBehaviour
     [SerializeField] private Vector3 spawnCenter = Vector3.zero;
     [SerializeField] private Vector3 spawnAreaSize = new Vector3(12f, 5f, 4f);
 
+    [Header("CPU Fallback")]
+    [SerializeField] private bool showCpuAvatarsWhenEmpty = true;
+    [SerializeField] private int cpuAvatarCount = 5;
+    [SerializeField] private float cpuAvatarStaySeconds = 30f;
+    [SerializeField] private string cpuAvatarIdPrefix = "CPU";
+
     public event Action<Encounter[]> OnEncountersReceived;
 
     public bool HandlesAvatarSpawning => avatarPrefab != null && characterRoot != null;
 
     private readonly HashSet<string> displayedEncounterKeys = new HashSet<string>();
     private readonly Queue<GameObject> activeAvatars = new Queue<GameObject>();
+    private readonly List<GameObject> activeUserAvatars = new List<GameObject>();
+    private readonly List<GameObject> activeCpuAvatars = new List<GameObject>();
     private bool hasCompletedInitialFetch;
     private Coroutine pollingRoutine;
 
@@ -120,6 +128,8 @@ public class APIManager : MonoBehaviour
             return;
         }
 
+        CleanupDestroyedAvatars();
+
         bool shouldSpawnInitialData = showExistingDataOnStart || hasCompletedInitialFetch;
 
         foreach (Encounter encounter in encounters)
@@ -137,14 +147,19 @@ public class APIManager : MonoBehaviour
 
             if (shouldSpawnInitialData)
             {
-                SpawnAvatar(encounter);
+                SpawnAvatar(encounter, false, avatarStaySeconds);
             }
+        }
+
+        if (showCpuAvatarsWhenEmpty && !HasActiveUserAvatars())
+        {
+            EnsureCpuAvatars();
         }
 
         hasCompletedInitialFetch = true;
     }
 
-    private void SpawnAvatar(Encounter encounter)
+    private void SpawnAvatar(Encounter encounter, bool isCpuAvatar, float displaySeconds)
     {
         if (avatarPrefab == null || characterRoot == null)
         {
@@ -152,6 +167,11 @@ public class APIManager : MonoBehaviour
         }
 
         CleanupDestroyedAvatars();
+
+        if (!isCpuAvatar)
+        {
+            ClearCpuAvatars();
+        }
 
         GameObject avatarObject = Instantiate(avatarPrefab, characterRoot);
         avatarObject.transform.localPosition = GetRandomSpawnPosition();
@@ -163,7 +183,7 @@ public class APIManager : MonoBehaviour
             avatarView = avatarObject.AddComponent<AvatarView>();
         }
 
-        avatarView.Initialize(encounter, avatarStaySeconds);
+        avatarView.Initialize(encounter, displaySeconds);
 
         if (avatarObject.GetComponent<BillboardToCamera>() == null)
         {
@@ -177,7 +197,64 @@ public class APIManager : MonoBehaviour
         }
 
         activeAvatars.Enqueue(avatarObject);
+        if (isCpuAvatar)
+        {
+            activeCpuAvatars.Add(avatarObject);
+        }
+        else
+        {
+            activeUserAvatars.Add(avatarObject);
+        }
+
         TrimAvatarCount();
+    }
+
+    private void EnsureCpuAvatars()
+    {
+        if (avatarPrefab == null || characterRoot == null)
+        {
+            return;
+        }
+
+        CleanupDestroyedAvatars();
+
+        int targetCount = Mathf.Clamp(cpuAvatarCount, 0, Mathf.Max(1, maxAvatarsOnScreen));
+        while (activeCpuAvatars.Count < targetCount)
+        {
+            int cpuIndex = activeCpuAvatars.Count + 1;
+            SpawnAvatar(CreateCpuEncounter(cpuIndex), true, cpuAvatarStaySeconds);
+        }
+    }
+
+    private Encounter CreateCpuEncounter(int index)
+    {
+        string id = $"{cpuAvatarIdPrefix}_{index:00}";
+        return new Encounter
+        {
+            my_id = "cpu",
+            target_id = id,
+            timestamp = $"cpu_{Time.frameCount}_{index}"
+        };
+    }
+
+    private bool HasActiveUserAvatars()
+    {
+        CleanupDestroyedAvatars();
+        return activeUserAvatars.Count > 0;
+    }
+
+    private void ClearCpuAvatars()
+    {
+        for (int i = 0; i < activeCpuAvatars.Count; i++)
+        {
+            if (activeCpuAvatars[i] != null)
+            {
+                Destroy(activeCpuAvatars[i]);
+            }
+        }
+
+        activeCpuAvatars.Clear();
+        CleanupDestroyedAvatars();
     }
 
     private Vector3 GetRandomSpawnPosition()
@@ -215,6 +292,20 @@ public class APIManager : MonoBehaviour
             if (avatarObject != null)
             {
                 activeAvatars.Enqueue(avatarObject);
+            }
+        }
+
+        RemoveDestroyed(activeUserAvatars);
+        RemoveDestroyed(activeCpuAvatars);
+    }
+
+    private static void RemoveDestroyed(List<GameObject> avatars)
+    {
+        for (int i = avatars.Count - 1; i >= 0; i--)
+        {
+            if (avatars[i] == null)
+            {
+                avatars.RemoveAt(i);
             }
         }
     }

@@ -11,8 +11,16 @@ public class CrowdAvatarManager : MonoBehaviour
     [Header("Display")]
     [SerializeField] private int maxAvatarCount = 30;
 
+    [Header("CPU Fallback")]
+    [SerializeField] private bool showCpuAvatarsWhenEmpty = true;
+    [SerializeField] private int cpuAvatarCount = 5;
+    [SerializeField] private float cpuAvatarStaySeconds = 30f;
+    [SerializeField] private string cpuAvatarIdPrefix = "CPU";
+
     private readonly HashSet<string> processedEncounters = new HashSet<string>();
     private readonly Queue<GameObject> activeAvatarsQueue = new Queue<GameObject>();
+    private readonly List<GameObject> activeUserAvatars = new List<GameObject>();
+    private readonly List<GameObject> activeCpuAvatars = new List<GameObject>();
 
     public int CurrentAvatarCount => activeAvatarsQueue.Count;
     public int MaxAvatarCount => maxAvatarCount;
@@ -40,6 +48,8 @@ public class CrowdAvatarManager : MonoBehaviour
             return;
         }
 
+        CleanupDestroyedAvatars();
+
         foreach (Encounter encounter in encounters)
         {
             if (encounter == null)
@@ -53,16 +63,28 @@ public class CrowdAvatarManager : MonoBehaviour
                 continue;
             }
 
-            SpawnAvatar(encounter);
+            SpawnAvatar(encounter, false, 10f);
+        }
+
+        if (showCpuAvatarsWhenEmpty && !HasActiveUserAvatars())
+        {
+            EnsureCpuAvatars();
         }
     }
 
-    private void SpawnAvatar(Encounter data)
+    private void SpawnAvatar(Encounter data, bool isCpuAvatar, float displaySeconds)
     {
         if (avatarPrefab == null || characterRoot == null)
         {
             Debug.LogWarning("avatarPrefab or characterRoot is not assigned.");
             return;
+        }
+
+        CleanupDestroyedAvatars();
+
+        if (!isCpuAvatar)
+        {
+            ClearCpuAvatars();
         }
 
         GameObject obj = Instantiate(avatarPrefab, characterRoot);
@@ -78,7 +100,7 @@ public class CrowdAvatarManager : MonoBehaviour
             avatarView = obj.AddComponent<AvatarView>();
         }
 
-        avatarView.Initialize(data, 10f);
+        avatarView.Initialize(data, displaySeconds);
 
         if (obj.GetComponent<BillboardToCamera>() == null)
         {
@@ -92,6 +114,14 @@ public class CrowdAvatarManager : MonoBehaviour
         }
 
         activeAvatarsQueue.Enqueue(obj);
+        if (isCpuAvatar)
+        {
+            activeCpuAvatars.Add(obj);
+        }
+        else
+        {
+            activeUserAvatars.Add(obj);
+        }
 
         while (activeAvatarsQueue.Count > maxAvatarCount)
         {
@@ -99,6 +129,82 @@ public class CrowdAvatarManager : MonoBehaviour
             if (oldestAvatar != null)
             {
                 Destroy(oldestAvatar);
+            }
+        }
+    }
+
+    private void EnsureCpuAvatars()
+    {
+        if (avatarPrefab == null || characterRoot == null)
+        {
+            return;
+        }
+
+        CleanupDestroyedAvatars();
+
+        int targetCount = Mathf.Clamp(cpuAvatarCount, 0, Mathf.Max(1, maxAvatarCount));
+        while (activeCpuAvatars.Count < targetCount)
+        {
+            int cpuIndex = activeCpuAvatars.Count + 1;
+            SpawnAvatar(CreateCpuEncounter(cpuIndex), true, cpuAvatarStaySeconds);
+        }
+    }
+
+    private Encounter CreateCpuEncounter(int index)
+    {
+        string id = $"{cpuAvatarIdPrefix}_{index:00}";
+        return new Encounter
+        {
+            my_id = "cpu",
+            target_id = id,
+            timestamp = $"cpu_{Time.frameCount}_{index}"
+        };
+    }
+
+    private bool HasActiveUserAvatars()
+    {
+        CleanupDestroyedAvatars();
+        return activeUserAvatars.Count > 0;
+    }
+
+    private void ClearCpuAvatars()
+    {
+        for (int i = 0; i < activeCpuAvatars.Count; i++)
+        {
+            if (activeCpuAvatars[i] != null)
+            {
+                Destroy(activeCpuAvatars[i]);
+            }
+        }
+
+        activeCpuAvatars.Clear();
+        CleanupDestroyedAvatars();
+    }
+
+    private void CleanupDestroyedAvatars()
+    {
+        int count = activeAvatarsQueue.Count;
+
+        for (int i = 0; i < count; i++)
+        {
+            GameObject avatarObject = activeAvatarsQueue.Dequeue();
+            if (avatarObject != null)
+            {
+                activeAvatarsQueue.Enqueue(avatarObject);
+            }
+        }
+
+        RemoveDestroyed(activeUserAvatars);
+        RemoveDestroyed(activeCpuAvatars);
+    }
+
+    private static void RemoveDestroyed(List<GameObject> avatars)
+    {
+        for (int i = avatars.Count - 1; i >= 0; i--)
+        {
+            if (avatars[i] == null)
+            {
+                avatars.RemoveAt(i);
             }
         }
     }
