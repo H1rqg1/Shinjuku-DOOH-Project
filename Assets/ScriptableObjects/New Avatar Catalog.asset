@@ -31,6 +31,4 @@ MonoBehaviour:
     standSprite: {fileID: 21300000, guid: 088da0c7c4d2c3e4687cca263b7f52fa, type: 3}
     walkSprite: {fileID: 21300000, guid: 52fda7db0c6d44c4b88cae3aac03f7f7, type: 3}
     sitSprite: {fileID: 21300000, guid: 6951a3bda400c6240b4a1c45c681bfb3, type: 3}
-  messages:
-  - id: 
-    text: 
+  messages: []

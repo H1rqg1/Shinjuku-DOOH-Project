@@ -5,7 +5,7 @@ import logging
 import platform
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -30,8 +30,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--scan-seconds", type=float, default=5.0, help="Seconds per BLE scan.")
     parser.add_argument("--interval-seconds", type=float, default=5.0, help="Wait seconds between scans.")
     parser.add_argument("--rssi-threshold", type=int, default=None, help="Ignore devices weaker than this RSSI.")
+    parser.add_argument("--name-contains", default=None, help="Only include devices whose name contains this text.")
+    parser.add_argument("--address-prefix", default=None, help="Only include devices whose address starts with this text.")
+    parser.add_argument("--require-name", action="store_true", help="Ignore devices with no advertised name.")
+    parser.add_argument("--cooldown-seconds", type=float, default=60.0, help="Seconds before posting the same address again.")
+    parser.add_argument("--max-posts-per-scan", type=int, default=10, help="Maximum encounters to POST per scan. Use 0 for no limit.")
+    parser.add_argument("--max-log-devices", type=int, default=30, help="Maximum device rows to log per scan. Use 0 for no limit.")
     parser.add_argument("--once", action="store_true", help="Run one scan and exit.")
     parser.add_argument("--dry-run", action="store_true", help="Log devices without POSTing encounters.")
+    parser.add_argument("--bleak-debug", action="store_true", help="Also show verbose logs from bleak internals.")
     parser.add_argument("--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"])
     return parser.parse_args()
 
@@ -83,7 +90,31 @@ def device_rows(discovered: Any) -> List[Tuple[str, str, Any]]:
     return rows
 
 
-async def scan_once(args: argparse.Namespace) -> int:
+def matches_filters(name: str, address: str, rssi: Any, args: argparse.Namespace) -> bool:
+    if args.require_name and name == "(no name)":
+        return False
+
+    if args.name_contains and args.name_contains.lower() not in name.lower():
+        return False
+
+    if args.address_prefix and not address.lower().startswith(args.address_prefix.lower()):
+        return False
+
+    if args.rssi_threshold is not None and rssi is not None and int(rssi) < args.rssi_threshold:
+        return False
+
+    return True
+
+
+def recently_posted(address: str, now_utc: datetime, posted_at: Dict[str, datetime], cooldown_seconds: float) -> bool:
+    previous_posted_at = posted_at.get(address)
+    if previous_posted_at is None:
+        return False
+
+    return (now_utc - previous_posted_at).total_seconds() < cooldown_seconds
+
+
+async def scan_once(args: argparse.Namespace, posted_at: Dict[str, datetime]) -> int:
     if BleakScanner is None:
         LOGGER.error("bleak import failed: %s", BLEAK_IMPORT_ERROR)
         LOGGER.error("Install dependencies in the server venv: python -m pip install -r requirements.txt")
@@ -108,21 +139,34 @@ async def scan_once(args: argparse.Namespace) -> int:
         return 2
 
     rows = device_rows(discovered)
-    LOGGER.info("Detected BLE devices: %d", len(rows))
+    matched_rows = [row for row in rows if matches_filters(row[0], row[1], row[2], args)]
+    LOGGER.info("Detected BLE devices: %d, matched filters: %d", len(rows), len(matched_rows))
 
     posted_count = 0
-    for name, address, rssi in rows:
-        LOGGER.info("Device name=%s address=%s rssi=%s", name, address, rssi)
+    logged_count = 0
+    max_log_devices: Optional[int] = None if args.max_log_devices == 0 else max(0, args.max_log_devices)
+    max_posts_per_scan: Optional[int] = None if args.max_posts_per_scan == 0 else max(0, args.max_posts_per_scan)
 
-        if args.rssi_threshold is not None and rssi is not None and int(rssi) < args.rssi_threshold:
-            LOGGER.debug("Skip weak device address=%s rssi=%s threshold=%s", address, rssi, args.rssi_threshold)
-            continue
+    for name, address, rssi in matched_rows:
+        if max_log_devices is None or logged_count < max_log_devices:
+            LOGGER.info("Device name=%s address=%s rssi=%s", name, address, rssi)
+            logged_count += 1
 
         if address == "(no address)" or args.dry_run:
             continue
 
+        now_utc = datetime.now(timezone.utc)
+        if recently_posted(address, now_utc, posted_at, args.cooldown_seconds):
+            LOGGER.debug("Skip recently posted device address=%s cooldown=%.1fs", address, args.cooldown_seconds)
+            continue
+
+        if max_posts_per_scan is not None and posted_count >= max_posts_per_scan:
+            LOGGER.warning("Max posts per scan reached: %d", max_posts_per_scan)
+            break
+
         try:
             post_encounter(args.server_url, args.my_id, address)
+            posted_at[address] = now_utc
             posted_count += 1
         except HTTPError as exc:
             LOGGER.error("POST failed status=%s reason=%s", exc.code, exc.reason)
@@ -141,9 +185,12 @@ async def main_async() -> int:
         level=getattr(logging, args.log_level),
         format="%(asctime)s %(levelname)s %(message)s",
     )
+    if not args.bleak_debug:
+        logging.getLogger("bleak").setLevel(logging.WARNING)
 
+    posted_at: Dict[str, datetime] = {}
     while True:
-        exit_code = await scan_once(args)
+        exit_code = await scan_once(args, posted_at)
         if args.once or exit_code != 0:
             return exit_code
 

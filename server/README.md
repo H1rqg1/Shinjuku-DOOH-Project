@@ -70,15 +70,38 @@ python .\ble_scanner.py --server-url http://127.0.0.1:8000 --my-id dooh_pc
 python .\ble_scanner.py --once --dry-run --log-level DEBUG
 ```
 
+周囲のBLE端末が多い場所では、対象を絞って起動します。
+
+```powershell
+# 名前に AYA を含む端末だけを見る
+python .\ble_scanner.py --once --dry-run --name-contains AYA
+
+# RSSI -70以上の近い端末だけをFastAPIへ送る
+python .\ble_scanner.py --rssi-threshold -70 --max-posts-per-scan 5
+
+# 名前を広告している端末だけをFastAPIへ送る
+python .\ble_scanner.py --require-name --max-posts-per-scan 5
+```
+
 BLE検知スクリプトは以下をログに出します。
 
 - bleakのimport確認
 - OSとPythonバージョン
 - スキャン開始
-- 検出件数
+- 検出件数とフィルタ後の件数
 - 検出デバイスの名前、アドレス、RSSI
 - FastAPIへのPOST件数
 - 例外発生時の詳細
+
+主なオプション:
+
+- `--rssi-threshold -70`: 電波が弱い端末を無視します。数値を大きくすると近い端末だけになります。
+- `--name-contains TEXT`: 名前に `TEXT` を含む端末だけ対象にします。
+- `--require-name`: 名前なし端末を無視します。
+- `--address-prefix AA:BB`: アドレス先頭が一致する端末だけ対象にします。
+- `--cooldown-seconds 60`: 同じアドレスを再POSTするまでの秒数です。
+- `--max-posts-per-scan 10`: 1回のスキャンでPOSTする最大件数です。
+- `--dry-run`: FastAPIへPOSTせず、検出ログだけ確認します。
 
 ### 3. UnityをPlay
 
@@ -131,6 +154,7 @@ Get-Service bthserv
 - `BLE scan failed`: BluetoothがOFF、BLE非対応アダプタ、ドライバ異常、Windows側の権限制限が疑われます。
 - `POST failed: cannot reach FastAPI server`: FastAPIサーバーが起動していない、または `--server-url` が違います。
 - 検出件数が0: 周囲にBLE広告を出す端末がない、距離が遠い、端末側のBluetoothがOFFの可能性があります。
+- 検出件数は多いが対象端末が分からない: `--require-name`、`--name-contains`、`--rssi-threshold` で絞り込みます。
 
 ## 別PCから接続できるように起動
 
