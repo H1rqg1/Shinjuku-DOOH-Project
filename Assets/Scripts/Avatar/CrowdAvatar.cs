@@ -105,7 +105,7 @@ public class CrowdAvatar : MonoBehaviour
             return;
         }
 
-        spriteRenderer.flipX = deltaX < 0f;
+        spriteRenderer.flipX = deltaX > 0f;
     }
 
     private void ApplyIdleSprite()
