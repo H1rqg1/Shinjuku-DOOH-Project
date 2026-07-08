@@ -21,6 +21,7 @@ public class APIManager : MonoBehaviour
     [SerializeField] private int maxAvatarsOnScreen = 30;
     [SerializeField] private Vector3 spawnCenter = Vector3.zero;
     [SerializeField] private Vector3 spawnAreaSize = new Vector3(12f, 5f, 4f);
+    [SerializeField] private float spawnHeight = 0f;
 
     [Header("CPU Fallback")]
     [SerializeField] private bool showCpuAvatarsWhenEmpty = true;
@@ -263,7 +264,7 @@ public class APIManager : MonoBehaviour
 
         return spawnCenter + new Vector3(
             UnityEngine.Random.Range(-halfSize.x, halfSize.x),
-            UnityEngine.Random.Range(-halfSize.y, halfSize.y),
+            spawnHeight,
             UnityEngine.Random.Range(-halfSize.z, halfSize.z)
         );
     }

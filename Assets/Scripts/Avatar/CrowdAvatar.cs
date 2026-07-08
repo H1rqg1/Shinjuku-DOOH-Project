@@ -16,9 +16,11 @@ public class CrowdAvatar : MonoBehaviour
     public float walkRadius = 4.0f;
     public float minWaitTime = 1.0f;
     public float maxWaitTime = 4.0f;
+    public float facingDeadZone = 0.001f;
 
     private Vector3 startPosition;
     private Vector3 targetPosition;
+    private float fixedY;
     private float waitTimer;
     private bool isWalking;
     private TMP_Text tmpNameText;
@@ -41,6 +43,7 @@ public class CrowdAvatar : MonoBehaviour
     private void Start()
     {
         startPosition = transform.position;
+        fixedY = startPosition.y;
 
         if (spriteRenderer != null && standSprite != null)
         {
@@ -54,16 +57,23 @@ public class CrowdAvatar : MonoBehaviour
     {
         if (isWalking)
         {
-            transform.position = Vector3.MoveTowards(transform.position, targetPosition, moveSpeed * Time.deltaTime);
+            Vector3 previousPosition = transform.position;
+            Vector3 nextPosition = Vector3.MoveTowards(previousPosition, targetPosition, moveSpeed * Time.deltaTime);
+            nextPosition.y = fixedY;
+            transform.position = nextPosition;
+            ApplyFacing(nextPosition.x - previousPosition.x);
 
             if (spriteRenderer != null && walkSprite != null)
             {
                 spriteRenderer.sprite = walkSprite;
-                spriteRenderer.flipX = targetPosition.x < transform.position.x;
             }
 
             if (Vector3.Distance(transform.position, targetPosition) < 0.1f)
             {
+                Vector3 snappedPosition = transform.position;
+                snappedPosition.y = fixedY;
+                transform.position = snappedPosition;
+
                 isWalking = false;
                 waitTimer = Random.Range(minWaitTime, maxWaitTime);
                 ApplyIdleSprite();
@@ -83,8 +93,19 @@ public class CrowdAvatar : MonoBehaviour
     {
         float randomX = Random.Range(-walkRadius, walkRadius);
         float randomZ = Random.Range(-walkRadius, walkRadius);
-        targetPosition = new Vector3(startPosition.x + randomX, startPosition.y, startPosition.z + randomZ);
+        targetPosition = new Vector3(startPosition.x + randomX, fixedY, startPosition.z + randomZ);
+        ApplyFacing(targetPosition.x - transform.position.x);
         isWalking = true;
+    }
+
+    private void ApplyFacing(float deltaX)
+    {
+        if (spriteRenderer == null || Mathf.Abs(deltaX) <= facingDeadZone)
+        {
+            return;
+        }
+
+        spriteRenderer.flipX = deltaX < 0f;
     }
 
     private void ApplyIdleSprite()

@@ -11,10 +11,7 @@ public class AvatarView : MonoBehaviour
 
     [Header("Motion")]
     [SerializeField] private float fadeSeconds = 1f;
-    [SerializeField] private float floatAmplitude = 0.15f;
-    [SerializeField] private float floatSpeed = 2f;
 
-    private Vector3 baseLocalPosition;
     private Color originalSpriteColor = Color.white;
     private float staySeconds = 10f;
     private Coroutine lifeRoutine;
@@ -22,15 +19,6 @@ public class AvatarView : MonoBehaviour
     private void Awake()
     {
         ResolveReferences();
-        baseLocalPosition = transform.localPosition;
-    }
-
-    private void Update()
-    {
-        float offsetY = Mathf.Sin(Time.time * floatSpeed) * floatAmplitude;
-        Vector3 currentPosition = transform.localPosition;
-        currentPosition.y = baseLocalPosition.y + offsetY;
-        transform.localPosition = currentPosition;
     }
 
     public void Initialize(Encounter encounter, float displaySeconds)
@@ -38,7 +26,6 @@ public class AvatarView : MonoBehaviour
         ResolveReferences();
 
         staySeconds = Mathf.Max(0.1f, displaySeconds);
-        baseLocalPosition = transform.localPosition;
 
         string targetId = string.IsNullOrWhiteSpace(encounter?.target_id)
             ? "unknown"
