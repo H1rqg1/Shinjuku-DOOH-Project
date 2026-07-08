@@ -13,12 +13,19 @@ public class DOOHStatusDisplay : MonoBehaviour
     [Header("Text")]
     [SerializeField] private TMP_Text detectedCountText;
     [SerializeField] private TMP_Text currentTimeText;
-    [SerializeField] private string countLabel = "本日の検出人数";
-    [SerializeField] private string timeLabel = "現在時刻";
+    [SerializeField] private string countLabel = "Today's count in Shinjuku";
+    [SerializeField] private string timeLabel = "Time";
 
     private Coroutine pollingRoutine;
     private bool hasWarnedMissingDetectedText;
     private bool hasWarnedMissingTimeText;
+
+    private void Awake()
+    {
+        ConfigureText(detectedCountText);
+        ConfigureText(currentTimeText);
+        ShowDefaultStats();
+    }
 
     private void OnEnable()
     {
@@ -90,7 +97,7 @@ public class DOOHStatusDisplay : MonoBehaviour
     {
         if (detectedCountText != null)
         {
-            detectedCountText.text = $"{countLabel}：{stats.daily_detected_count}人";
+            detectedCountText.text = $"{countLabel}: {stats.daily_detected_count}";
         }
         else if (!hasWarnedMissingDetectedText)
         {
@@ -100,13 +107,42 @@ public class DOOHStatusDisplay : MonoBehaviour
 
         if (currentTimeText != null)
         {
-            currentTimeText.text = $"{timeLabel}：{stats.time_jst}";
+            string timeText = string.IsNullOrWhiteSpace(stats.time_jst) ? "--:--" : stats.time_jst;
+            currentTimeText.text = $"{timeLabel}: {timeText}";
         }
         else if (!hasWarnedMissingTimeText)
         {
             Debug.LogWarning("CurrentTimeText is not assigned.");
             hasWarnedMissingTimeText = true;
         }
+    }
+
+    private void ShowDefaultStats()
+    {
+        if (detectedCountText != null)
+        {
+            detectedCountText.text = $"{countLabel}: 0";
+        }
+
+        if (currentTimeText != null)
+        {
+            currentTimeText.text = $"{timeLabel}: --:--";
+        }
+    }
+
+    private static void ConfigureText(TMP_Text text)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        text.enableAutoSizing = true;
+        text.fontSizeMax = Mathf.Max(text.fontSizeMax, text.fontSize);
+        text.fontSizeMin = Mathf.Min(text.fontSizeMin, 32f);
+        text.textWrappingMode = TextWrappingModes.NoWrap;
+        text.overflowMode = TextOverflowModes.Overflow;
+        text.alignment = TextAlignmentOptions.TopLeft;
     }
 
     [Serializable]
