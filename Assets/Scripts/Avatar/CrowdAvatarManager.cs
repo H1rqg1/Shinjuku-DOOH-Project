@@ -59,6 +59,7 @@ public class CrowdAvatarManager : MonoBehaviour
                 continue;
             }
 
+            encounter.EnsureDisplayTargetId();
             string uniqueKey = encounter.GetDisplayKey();
             if (!processedEncounters.Add(uniqueKey))
             {
@@ -90,6 +91,8 @@ public class CrowdAvatarManager : MonoBehaviour
         }
 
         GameObject obj = Instantiate(avatarPrefab, characterRoot);
+        bool usePrefabDefaultCostume = data.UsesPrefabDefaultAvatar();
+        string displayTargetId = data.EnsureDisplayTargetId();
         obj.transform.localPosition = new Vector3(
             Random.Range(-6f, 6f),
             0f,
@@ -109,13 +112,13 @@ public class CrowdAvatarManager : MonoBehaviour
             obj.AddComponent<BillboardToCamera>();
         }
 
-        CostumeEntry costume = ResolveCostume(data, isCpuAvatar);
+        CostumeEntry costume = ResolveCostume(data, isCpuAvatar, usePrefabDefaultCostume);
 
         CrowdAvatar avatarScript = obj.GetComponent<CrowdAvatar>();
         if (avatarScript != null)
         {
             avatarScript.ApplyCostume(costume);
-            avatarScript.SetPlayerName(data.target_id);
+            avatarScript.SetPlayerName(displayTargetId);
         }
 
         activeAvatarsQueue.Enqueue(obj);
@@ -138,9 +141,9 @@ public class CrowdAvatarManager : MonoBehaviour
         }
     }
 
-    private CostumeEntry ResolveCostume(Encounter data, bool isCpuAvatar)
+    private CostumeEntry ResolveCostume(Encounter data, bool isCpuAvatar, bool usePrefabDefaultCostume)
     {
-        if (isCpuAvatar || data == null || string.IsNullOrWhiteSpace(data.costume_id))
+        if (isCpuAvatar || usePrefabDefaultCostume || data == null || string.IsNullOrWhiteSpace(data.costume_id))
         {
             return null;
         }

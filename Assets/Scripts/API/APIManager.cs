@@ -140,6 +140,7 @@ public class APIManager : MonoBehaviour
                 continue;
             }
 
+            encounter.EnsureDisplayTargetId();
             string key = encounter.GetDisplayKey();
             if (!displayedEncounterKeys.Add(key))
             {
@@ -176,7 +177,8 @@ public class APIManager : MonoBehaviour
 
         GameObject avatarObject = Instantiate(avatarPrefab, characterRoot);
         avatarObject.transform.localPosition = GetRandomSpawnPosition();
-        avatarObject.name = $"Avatar_{SafeName(encounter.target_id)}";
+        string displayTargetId = encounter.EnsureDisplayTargetId();
+        avatarObject.name = $"Avatar_{SafeName(displayTargetId)}";
 
         AvatarView avatarView = avatarObject.GetComponent<AvatarView>();
         if (avatarView == null)
@@ -194,7 +196,7 @@ public class APIManager : MonoBehaviour
         CrowdAvatar crowdAvatar = avatarObject.GetComponent<CrowdAvatar>();
         if (crowdAvatar != null)
         {
-            crowdAvatar.SetPlayerName(encounter.target_id);
+            crowdAvatar.SetPlayerName(displayTargetId);
         }
 
         activeAvatars.Enqueue(avatarObject);

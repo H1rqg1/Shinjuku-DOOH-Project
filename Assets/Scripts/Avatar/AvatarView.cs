@@ -27,9 +27,9 @@ public class AvatarView : MonoBehaviour
 
         staySeconds = Mathf.Max(0.1f, displaySeconds);
 
-        string targetId = string.IsNullOrWhiteSpace(encounter?.target_id)
-            ? "unknown"
-            : encounter.target_id.Trim();
+        string targetId = encounter != null
+            ? encounter.EnsureDisplayTargetId()
+            : "None_00";
 
         gameObject.name = $"Avatar_{targetId}";
         SetLabel(targetId);

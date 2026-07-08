@@ -33,7 +33,7 @@ app.add_middleware(
 
 class Encounter(BaseModel):
     my_id: str
-    target_id: str
+    target_id: Optional[str] = None
     timestamp: Optional[str] = None
 
 
