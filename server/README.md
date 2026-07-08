@@ -1,5 +1,57 @@
 # DOOH Encounter Server
 
+## Current BLE detection behavior
+
+`app.py` does not scan Bluetooth devices directly. BLE detection is done by
+`ble_scanner.py`, which uses `BleakScanner.discover()` and sends detected
+devices to FastAPI `POST /encounter`.
+
+Current defaults:
+
+- RSSI filter: `--rssi-threshold -90`
+- Disable RSSI filtering: `--no-rssi-threshold`
+- POST limit per scan: unlimited by default (`--max-posts-per-scan 0`)
+- Same device cooldown: `--cooldown-seconds 60`
+- `target_id`: advertised BLE name when available, otherwise `null`
+- Device address and RSSI are saved separately as `device_address` and `rssi`
+
+This means unnamed BLE devices are no longer shown as address text above the
+avatar. Unity receives `target_id: null`, so the avatar label becomes `None_01`,
+`None_02`, etc. The server still counts unnamed devices by `device_address`.
+
+Recommended startup:
+
+```powershell
+cd C:\Users\zhibu\GitHub\Shinjuku-DOOH-Project\server
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python .\ble_scanner.py --server-url http://127.0.0.1:8000 --my-id dooh_pc
+```
+
+If detections are still too few, widen the range:
+
+```powershell
+python .\ble_scanner.py --rssi-threshold -95 --max-posts-per-scan 0
+```
+
+If you want to check everything the adapter can see, disable RSSI filtering:
+
+```powershell
+python .\ble_scanner.py --once --dry-run --no-rssi-threshold --log-level DEBUG
+```
+
+If detections are too many, narrow the range:
+
+```powershell
+python .\ble_scanner.py --rssi-threshold -75 --max-posts-per-scan 20
+```
+
+If you intentionally want to use BLE addresses as Unity labels:
+
+```powershell
+python .\ble_scanner.py --target-id-source address
+```
+
 UnityのDOOH表示プロジェクトへ、すれ違いデータを渡すためのFastAPIサーバーです。
 
 ## セットアップ

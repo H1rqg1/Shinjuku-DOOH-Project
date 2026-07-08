@@ -34,7 +34,26 @@ app.add_middleware(
 class Encounter(BaseModel):
     my_id: str
     target_id: Optional[str] = None
+    device_name: Optional[str] = None
+    device_address: Optional[str] = None
+    rssi: Optional[int] = None
     timestamp: Optional[str] = None
+
+
+def normalize_optional_text(value: Any) -> Optional[str]:
+    if not isinstance(value, str):
+        return None
+
+    normalized_value = value.strip()
+    return normalized_value or None
+
+
+def is_none_like_id(value: Any) -> bool:
+    normalized_value = normalize_optional_text(value)
+    if normalized_value is None:
+        return True
+
+    return normalized_value.lower() in {"none", "null"}
 
 
 def ensure_data_file() -> None:
@@ -75,10 +94,35 @@ def encounter_to_dict(encounter: Encounter) -> Dict[str, Any]:
     else:
         payload = encounter.dict()
 
+    if is_none_like_id(payload.get("target_id")):
+        payload["target_id"] = None
+    else:
+        payload["target_id"] = normalize_optional_text(payload.get("target_id"))
+
+    payload["device_name"] = normalize_optional_text(payload.get("device_name"))
+    payload["device_address"] = normalize_optional_text(payload.get("device_address"))
+
     if not payload.get("timestamp"):
         payload["timestamp"] = datetime.now(JST).isoformat(timespec="seconds")
 
     return payload
+
+
+def get_detection_identity(encounter: Dict[str, Any]) -> Optional[str]:
+    target_id = encounter.get("target_id")
+    if not is_none_like_id(target_id):
+        return f"target:{normalize_optional_text(target_id)}"
+
+    device_address = normalize_optional_text(encounter.get("device_address"))
+    if device_address is not None:
+        return f"address:{device_address.lower()}"
+
+    timestamp = normalize_optional_text(encounter.get("timestamp"))
+    my_id = normalize_optional_text(encounter.get("my_id"))
+    if timestamp is not None or my_id is not None:
+        return f"anonymous:{my_id or 'unknown'}:{timestamp or 'unknown'}"
+
+    return None
 
 
 def parse_timestamp_to_jst(value: Any) -> Optional[datetime]:
@@ -113,9 +157,9 @@ def build_today_stats(encounters: List[Dict[str, Any]]) -> Dict[str, Any]:
 
         daily_encounter_count += 1
 
-        detected_id = encounter.get("target_id") or encounter.get("my_id")
-        if isinstance(detected_id, str) and detected_id.strip():
-            detected_ids.add(detected_id.strip())
+        detected_id = get_detection_identity(encounter)
+        if detected_id is not None:
+            detected_ids.add(detected_id)
 
     daily_detected_count = len(detected_ids) if detected_ids else daily_encounter_count
 

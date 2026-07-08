@@ -29,13 +29,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--my-id", default=platform.node() or "windows_pc", help="ID reported as my_id.")
     parser.add_argument("--scan-seconds", type=float, default=5.0, help="Seconds per BLE scan.")
     parser.add_argument("--interval-seconds", type=float, default=5.0, help="Wait seconds between scans.")
-    parser.add_argument("--rssi-threshold", type=int, default=None, help="Ignore devices weaker than this RSSI.")
+    parser.add_argument("--rssi-threshold", type=int, default=-90, help="Ignore devices weaker than this RSSI. Use --no-rssi-threshold to disable.")
+    parser.add_argument("--no-rssi-threshold", action="store_true", help="Disable RSSI filtering and include all detected signal strengths.")
     parser.add_argument("--name-contains", default=None, help="Only include devices whose name contains this text.")
     parser.add_argument("--address-prefix", default=None, help="Only include devices whose address starts with this text.")
     parser.add_argument("--require-name", action="store_true", help="Ignore devices with no advertised name.")
     parser.add_argument("--cooldown-seconds", type=float, default=60.0, help="Seconds before posting the same address again.")
-    parser.add_argument("--max-posts-per-scan", type=int, default=10, help="Maximum encounters to POST per scan. Use 0 for no limit.")
+    parser.add_argument("--max-posts-per-scan", type=int, default=0, help="Maximum encounters to POST per scan. Use 0 for no limit.")
     parser.add_argument("--max-log-devices", type=int, default=30, help="Maximum device rows to log per scan. Use 0 for no limit.")
+    parser.add_argument(
+        "--target-id-source",
+        choices=["name-or-none", "name-or-address", "address"],
+        default="name-or-none",
+        help="Value sent as target_id. name-or-none keeps unnamed devices as null so Unity displays None_01.",
+    )
     parser.add_argument("--once", action="store_true", help="Run one scan and exit.")
     parser.add_argument("--dry-run", action="store_true", help="Log devices without POSTing encounters.")
     parser.add_argument("--bleak-debug", action="store_true", help="Also show verbose logs from bleak internals.")
@@ -47,10 +54,20 @@ def normalize_server_url(server_url: str) -> str:
     return server_url.rstrip("/")
 
 
-def post_encounter(server_url: str, my_id: str, target_id: str) -> None:
+def post_encounter(
+    server_url: str,
+    my_id: str,
+    target_id: Optional[str],
+    device_name: Optional[str],
+    device_address: str,
+    rssi: Optional[int],
+) -> None:
     payload = {
         "my_id": my_id,
         "target_id": target_id,
+        "device_name": device_name,
+        "device_address": device_address,
+        "rssi": rssi,
         "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
     data = json.dumps(payload).encode("utf-8")
@@ -66,8 +83,8 @@ def post_encounter(server_url: str, my_id: str, target_id: str) -> None:
         LOGGER.debug("POST /encounter status=%s body=%s", response.status, body)
 
 
-def device_rows(discovered: Any) -> List[Tuple[str, str, Any]]:
-    rows: List[Tuple[str, str, Any]] = []
+def device_rows(discovered: Any) -> List[Tuple[Optional[str], str, Optional[int]]]:
+    rows: List[Tuple[Optional[str], str, Optional[int]]] = []
 
     if isinstance(discovered, dict):
         iterable: Iterable[Any] = discovered.values()
@@ -83,24 +100,55 @@ def device_rows(discovered: Any) -> List[Tuple[str, str, Any]]:
             device = item
             rssi = getattr(device, "rssi", None)
 
-        name = getattr(device, "name", None) or "(no name)"
+        name = getattr(device, "name", None)
         address = getattr(device, "address", None) or "(no address)"
-        rows.append((name, address, rssi))
+        rows.append((normalize_device_name(name), address, normalize_rssi(rssi)))
 
     return rows
 
 
-def matches_filters(name: str, address: str, rssi: Any, args: argparse.Namespace) -> bool:
-    if args.require_name and name == "(no name)":
+def normalize_device_name(name: Any) -> Optional[str]:
+    if not isinstance(name, str):
+        return None
+
+    normalized_name = name.strip()
+    return normalized_name or None
+
+
+def normalize_rssi(rssi: Any) -> Optional[int]:
+    if rssi is None:
+        return None
+
+    try:
+        return int(rssi)
+    except (TypeError, ValueError):
+        return None
+
+
+def build_target_id(name: Optional[str], address: str, args: argparse.Namespace) -> Optional[str]:
+    if args.target_id_source == "address":
+        return address
+
+    if name:
+        return name
+
+    if args.target_id_source == "name-or-address":
+        return address
+
+    return None
+
+
+def matches_filters(name: Optional[str], address: str, rssi: Optional[int], args: argparse.Namespace) -> bool:
+    if args.require_name and not name:
         return False
 
-    if args.name_contains and args.name_contains.lower() not in name.lower():
+    if args.name_contains and (not name or args.name_contains.lower() not in name.lower()):
         return False
 
     if args.address_prefix and not address.lower().startswith(args.address_prefix.lower()):
         return False
 
-    if args.rssi_threshold is not None and rssi is not None and int(rssi) < args.rssi_threshold:
+    if not args.no_rssi_threshold and args.rssi_threshold is not None and rssi is not None and rssi < args.rssi_threshold:
         return False
 
     return True
@@ -123,6 +171,12 @@ async def scan_once(args: argparse.Namespace, posted_at: Dict[str, datetime]) ->
     LOGGER.info("bleak import OK")
     LOGGER.info("OS: %s %s", platform.system(), platform.release())
     LOGGER.info("Python: %s", sys.version.split()[0])
+    if args.no_rssi_threshold:
+        LOGGER.info("RSSI filter: disabled")
+    else:
+        LOGGER.info("RSSI filter: >= %s dBm", args.rssi_threshold)
+
+    LOGGER.info("Target ID source: %s", args.target_id_source)
     LOGGER.info("Scan start: %.1f seconds", args.scan_seconds)
 
     try:
@@ -148,8 +202,10 @@ async def scan_once(args: argparse.Namespace, posted_at: Dict[str, datetime]) ->
     max_posts_per_scan: Optional[int] = None if args.max_posts_per_scan == 0 else max(0, args.max_posts_per_scan)
 
     for name, address, rssi in matched_rows:
+        display_name = name or "(no name)"
         if max_log_devices is None or logged_count < max_log_devices:
-            LOGGER.info("Device name=%s address=%s rssi=%s", name, address, rssi)
+            target_id = build_target_id(name, address, args)
+            LOGGER.info("Device name=%s address=%s rssi=%s target_id=%s", display_name, address, rssi, target_id)
             logged_count += 1
 
         if address == "(no address)" or args.dry_run:
@@ -165,7 +221,7 @@ async def scan_once(args: argparse.Namespace, posted_at: Dict[str, datetime]) ->
             break
 
         try:
-            post_encounter(args.server_url, args.my_id, address)
+            post_encounter(args.server_url, args.my_id, build_target_id(name, address, args), name, address, rssi)
             posted_at[address] = now_utc
             posted_count += 1
         except HTTPError as exc:
