@@ -1,14 +1,11 @@
-using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Networking;
 
 public class DOOHStatusDisplay : MonoBehaviour
 {
     [Header("Server")]
-    [SerializeField] private string serverUrl = "http://127.0.0.1:8000";
-    [SerializeField] private float updateIntervalSeconds = 5f;
+    [SerializeField] private DOOHServerConfig serverConfig;
 
     [Header("Text")]
     [SerializeField] private TMP_Text detectedCountText;
@@ -19,6 +16,7 @@ public class DOOHStatusDisplay : MonoBehaviour
     private Coroutine pollingRoutine;
     private bool hasWarnedMissingDetectedText;
     private bool hasWarnedMissingTimeText;
+    private DOOHApiClient apiClient;
 
     private void Awake()
     {
@@ -29,6 +27,16 @@ public class DOOHStatusDisplay : MonoBehaviour
 
     private void OnEnable()
     {
+        if (serverConfig == null || string.IsNullOrWhiteSpace(serverConfig.BaseUrl))
+        {
+            Debug.LogError(
+                "[DOOH API] Server configuration is missing.\n" +
+                "Please assign DOOHServerConfig to DOOHStatusDisplay.",
+                this);
+            return;
+        }
+
+        apiClient = new DOOHApiClient(serverConfig);
         pollingRoutine = StartCoroutine(PollStats());
     }
 
@@ -47,53 +55,17 @@ public class DOOHStatusDisplay : MonoBehaviour
         {
             yield return FetchStats();
 
-            float waitSeconds = Mathf.Max(1f, updateIntervalSeconds);
+            float waitSeconds = Mathf.Max(1f, serverConfig.PollingIntervalSeconds);
             yield return new WaitForSeconds(waitSeconds);
         }
     }
 
     private IEnumerator FetchStats()
     {
-        string statsUrl = BuildStatsUrl();
-
-        using (UnityWebRequest request = UnityWebRequest.Get(statsUrl))
-        {
-            yield return request.SendWebRequest();
-
-            if (request.result == UnityWebRequest.Result.ConnectionError ||
-                request.result == UnityWebRequest.Result.ProtocolError ||
-                request.result == UnityWebRequest.Result.DataProcessingError)
-            {
-                Debug.LogWarning($"DOOH stats request failed: {request.error} ({statsUrl})");
-                yield break;
-            }
-
-            StatsResponse stats = JsonUtility.FromJson<StatsResponse>(request.downloadHandler.text);
-            if (stats == null)
-            {
-                Debug.LogWarning($"DOOH stats parse failed: {request.downloadHandler.text}");
-                yield break;
-            }
-
-            ApplyStats(stats);
-        }
+        yield return apiClient.GetStats(ApplyStats, _ => { });
     }
 
-    private string BuildStatsUrl()
-    {
-        string normalizedUrl = string.IsNullOrWhiteSpace(serverUrl)
-            ? "http://127.0.0.1:8000"
-            : serverUrl.TrimEnd('/');
-
-        if (normalizedUrl.EndsWith("/stats", StringComparison.OrdinalIgnoreCase))
-        {
-            return normalizedUrl;
-        }
-
-        return $"{normalizedUrl}/stats";
-    }
-
-    private void ApplyStats(StatsResponse stats)
+    private void ApplyStats(DOOHStatsResponse stats)
     {
         if (detectedCountText != null)
         {
@@ -145,12 +117,4 @@ public class DOOHStatusDisplay : MonoBehaviour
         text.alignment = TextAlignmentOptions.TopLeft;
     }
 
-    [Serializable]
-    private class StatsResponse
-    {
-        public string date_jst = "";
-        public string time_jst = "";
-        public int daily_detected_count = 0;
-        public int daily_encounter_count = 0;
-    }
 }

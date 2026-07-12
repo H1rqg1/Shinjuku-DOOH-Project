@@ -412,8 +412,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82f929ce7bc74cb49afe1cf623a3a029, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DOOHStatusDisplay
-  serverUrl: http://127.0.0.1:8000
-  updateIntervalSeconds: 5
+  serverConfig: {fileID: 11400000, guid: 47996e7f7d88460b95829f94548acf83, type: 2}
   detectedCountText: {fileID: 237390858}
   currentTimeText: {fileID: 212491735}
   countLabel: Today's count in Shinjuku
@@ -1339,8 +1338,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5421cd505264281489a4083185f26dcc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::APIManager
-  serverUrl: http://127.0.0.1:8000/encounters
-  fetchIntervalSeconds: 5
+  serverConfig: {fileID: 11400000, guid: 47996e7f7d88460b95829f94548acf83, type: 2}
   showExistingDataOnStart: 1
   avatarPrefab: {fileID: 0}
   characterRoot: {fileID: 0}

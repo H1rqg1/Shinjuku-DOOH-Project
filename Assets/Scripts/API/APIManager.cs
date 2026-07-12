@@ -2,16 +2,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Networking;
-using UnityEngine.Serialization;
 
 public class APIManager : MonoBehaviour
 {
     [Header("Server")]
-    [FormerlySerializedAs("url")]
-    [SerializeField] private string serverUrl = "http://127.0.0.1:8000";
-    [FormerlySerializedAs("fetchInterval")]
-    [SerializeField] private float fetchIntervalSeconds = 1f;
+    [SerializeField] private DOOHServerConfig serverConfig;
     [SerializeField] private bool showExistingDataOnStart = true;
 
     [Header("Avatar Spawning")]
@@ -39,6 +34,7 @@ public class APIManager : MonoBehaviour
     private readonly List<GameObject> activeCpuAvatars = new List<GameObject>();
     private bool hasCompletedInitialFetch;
     private Coroutine pollingRoutine;
+    private DOOHApiClient apiClient;
 
     private void Awake()
     {
@@ -54,6 +50,11 @@ public class APIManager : MonoBehaviour
 
     private void OnEnable()
     {
+        if (!TryInitializeApiClient())
+        {
+            return;
+        }
+
         pollingRoutine = StartCoroutine(PollEncounters());
     }
 
@@ -72,54 +73,39 @@ public class APIManager : MonoBehaviour
         {
             yield return FetchEncounters();
 
-            float waitSeconds = Mathf.Max(0.1f, fetchIntervalSeconds);
+            float waitSeconds = Mathf.Max(1f, serverConfig.PollingIntervalSeconds);
             yield return new WaitForSeconds(waitSeconds);
         }
     }
 
     private IEnumerator FetchEncounters()
     {
-        string encountersUrl = BuildEncountersUrl();
-
-        using (UnityWebRequest request = UnityWebRequest.Get(encountersUrl))
-        {
-            yield return request.SendWebRequest();
-
-            if (request.result == UnityWebRequest.Result.ConnectionError ||
-                request.result == UnityWebRequest.Result.ProtocolError ||
-                request.result == UnityWebRequest.Result.DataProcessingError)
-            {
-                Debug.LogWarning($"Encounter API request failed: {request.error} ({encountersUrl})");
-                yield break;
-            }
-
-            EncounterList encounterList = JsonUtility.FromJson<EncounterList>(request.downloadHandler.text);
-            Encounter[] encounters = encounterList != null && encounterList.encounters != null
-                ? encounterList.encounters
-                : new Encounter[0];
-
-            OnEncountersReceived?.Invoke(encounters);
-            HandleEncounters(encounters);
-        }
+        yield return apiClient.GetEncounters(HandleReceivedEncounters, _ => { });
     }
 
-    private string BuildEncountersUrl()
+    private void HandleReceivedEncounters(Encounter[] encounters)
     {
-        string normalizedUrl = string.IsNullOrWhiteSpace(serverUrl)
-            ? "http://127.0.0.1:8000"
-            : serverUrl.TrimEnd('/');
+        OnEncountersReceived?.Invoke(encounters);
+        HandleEncounters(encounters);
+    }
 
-        if (normalizedUrl.EndsWith("/encounters", StringComparison.OrdinalIgnoreCase))
+    private bool TryInitializeApiClient()
+    {
+        if (serverConfig == null ||
+            string.IsNullOrWhiteSpace(serverConfig.BaseUrl) ||
+            string.IsNullOrWhiteSpace(serverConfig.EncountersPath))
         {
-            return normalizedUrl;
+            Debug.LogError(
+                "[DOOH API] Server configuration is missing.\n" +
+                "Please assign DOOHServerConfig to APIManager.",
+                this);
+            return false;
         }
 
-        if (normalizedUrl.EndsWith("/encounter", StringComparison.OrdinalIgnoreCase))
-        {
-            return $"{normalizedUrl}s";
-        }
-
-        return $"{normalizedUrl}/encounters";
+        apiClient = new DOOHApiClient(serverConfig);
+        Debug.Log($"[DOOH API] Environment: {serverConfig.EnvironmentName}\n" +
+                  $"[DOOH API] Endpoint: {apiClient.EncountersUrl}");
+        return true;
     }
 
     private void HandleEncounters(Encounter[] encounters)
