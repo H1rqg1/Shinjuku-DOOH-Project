@@ -92,4 +92,18 @@ Invoke-RestMethod `
 http://127.0.0.1:8000/stats
 ```
 
+## 2026-07-15 Production Profile Label And Lifetime
+
+- Confirmed the production profile and all three selected message IDs resolve
+  through the current AvatarCatalog; no message catalog additions were needed.
+- Added a runtime Japanese TextMeshPro font sourced from Windows system fonts to
+  prevent Japanese profile messages from rendering as missing-glyph squares.
+- Repositioned and resized the profile label above the avatar, with a compact
+  message size and dark outline for readability over the scene.
+- Changed registered-user avatar lifetime from 10 seconds to 600 seconds.
+- Kept CPU avatar lifetime independent at 30 seconds so only fallback avatars
+  rotate frequently.
+- Unity 6000.3.11f1 batch compilation completed successfully; the existing
+  unrelated AvatarCounter deprecation warning remains non-blocking.
+
 Unity側では `DOOHStatusDisplay` に `DetectedCountText` と `CurrentTimeText` を割り当てる。

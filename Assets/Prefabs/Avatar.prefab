@@ -297,6 +297,7 @@ MonoBehaviour:
   walkRadius: 4
   minWaitTime: 1
   maxWaitTime: 4
+  facingDeadZone: 0.001
 --- !u!114 &-5699869360172255641
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -313,8 +314,6 @@ MonoBehaviour:
   labelText: {fileID: 0}
   tmpLabelText: {fileID: 0}
   fadeSeconds: 1
-  floatAmplitude: 0.15
-  floatSpeed: 2
 --- !u!114 &-1987457845291937795
 MonoBehaviour:
   m_ObjectHideFlags: 0

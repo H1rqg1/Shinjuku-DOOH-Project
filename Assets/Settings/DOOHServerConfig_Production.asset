@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: DOOHServerConfig_Production
   m_EditorClassIdentifier: Assembly-CSharp::DOOHServerConfig
   environmentName: Production
-  baseUrl: https://REPLACE_ME.workers.dev
-  encountersPath: /encounters
+  baseUrl: https://shinjuku-dooh-api.pages.dev
+  profilesPath: /profiles/recent
   timeoutSeconds: 10
   pollingIntervalSeconds: 5

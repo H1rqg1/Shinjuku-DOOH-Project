@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: DOOHServerConfig_Local
   m_EditorClassIdentifier: Assembly-CSharp::DOOHServerConfig
   environmentName: Local
-  baseUrl: http://127.0.0.1:8000
-  encountersPath: /encounters
+  baseUrl: http://127.0.0.1:8788
+  profilesPath: /profiles/recent
   timeoutSeconds: 10
   pollingIntervalSeconds: 5

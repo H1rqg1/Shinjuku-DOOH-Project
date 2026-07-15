@@ -33,10 +33,18 @@ public class AvatarCatalog : ScriptableObject
 
         foreach (var message in messages)
         {
+            if (message == null || string.IsNullOrWhiteSpace(message.id))
+            {
+                continue;
+            }
+
             if (!messageMap.ContainsKey(message.id))
             {
                 messageMap.Add(message.id, message);
+                continue;
             }
+
+            Debug.LogWarning($"Duplicate message id '{message.id}' in AvatarCatalog. The first entry will be used.");
         }
     }
 
@@ -56,6 +64,13 @@ public class AvatarCatalog : ScriptableObject
     public bool TryGetMessage(string id, out MessageEntry message)
     {
         if (messageMap == null) Initialize();
+
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            message = null;
+            return false;
+        }
+
         return messageMap.TryGetValue(id, out message);
     }
 }

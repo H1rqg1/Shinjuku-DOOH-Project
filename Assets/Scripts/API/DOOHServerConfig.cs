@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(fileName = "DOOHServerConfig", menuName = "DOOH/Server Config")]
 public class DOOHServerConfig : ScriptableObject
@@ -8,7 +9,8 @@ public class DOOHServerConfig : ScriptableObject
 
     [Header("Server")]
     [SerializeField] private string baseUrl = "http://127.0.0.1:8000";
-    [SerializeField] private string encountersPath = "/encounters";
+    [FormerlySerializedAs("encountersPath")]
+    [SerializeField] private string profilesPath = "/profiles/recent";
 
     [Header("Request")]
     [SerializeField] private float timeoutSeconds = 10f;
@@ -16,7 +18,7 @@ public class DOOHServerConfig : ScriptableObject
 
     public string EnvironmentName => environmentName;
     public string BaseUrl => baseUrl;
-    public string EncountersPath => encountersPath;
+    public string ProfilesPath => profilesPath;
     public float TimeoutSeconds => timeoutSeconds;
     public float PollingIntervalSeconds => pollingIntervalSeconds;
 }

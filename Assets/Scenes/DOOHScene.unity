@@ -315,7 +315,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 70
+  m_fontSize: 71.6
   m_fontSizeBase: 70
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -412,7 +412,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82f929ce7bc74cb49afe1cf623a3a029, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DOOHStatusDisplay
-  serverConfig: {fileID: 11400000, guid: 47996e7f7d88460b95829f94548acf83, type: 2}
+  serverConfig: {fileID: 11400000, guid: 36992777c20f4e049a622a93bfe78fd0, type: 2}
   detectedCountText: {fileID: 237390858}
   currentTimeText: {fileID: 212491735}
   countLabel: Today's count in Shinjuku
@@ -501,7 +501,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 70
+  m_fontSize: 72
   m_fontSizeBase: 70
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1082,6 +1082,7 @@ MonoBehaviour:
   characterRoot: {fileID: 1869133560}
   avatarCatalog: {fileID: 11400000, guid: dccfe38177e7e334d97d66d6d43b67fa, type: 2}
   maxAvatarCount: 30
+  userAvatarStaySeconds: 600
   showCpuAvatarsWhenEmpty: 1
   cpuAvatarCount: 5
   cpuAvatarStaySeconds: 30
@@ -1338,14 +1339,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5421cd505264281489a4083185f26dcc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::APIManager
-  serverConfig: {fileID: 11400000, guid: 47996e7f7d88460b95829f94548acf83, type: 2}
+  serverConfig: {fileID: 11400000, guid: 36992777c20f4e049a622a93bfe78fd0, type: 2}
   showExistingDataOnStart: 1
   avatarPrefab: {fileID: 0}
   characterRoot: {fileID: 0}
-  avatarStaySeconds: 10
+  avatarStaySeconds: 600
   maxAvatarsOnScreen: 30
   spawnCenter: {x: 0, y: 0, z: 0}
   spawnAreaSize: {x: 12, y: 5, z: 4}
+  spawnHeight: 0
   showCpuAvatarsWhenEmpty: 1
   cpuAvatarCount: 5
   cpuAvatarStaySeconds: 30

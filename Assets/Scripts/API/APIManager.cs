@@ -12,7 +12,7 @@ public class APIManager : MonoBehaviour
     [Header("Avatar Spawning")]
     [SerializeField] private GameObject avatarPrefab;
     [SerializeField] private Transform characterRoot;
-    [SerializeField] private float avatarStaySeconds = 10f;
+    [SerializeField] private float avatarStaySeconds = 600f;
     [SerializeField] private int maxAvatarsOnScreen = 30;
     [SerializeField] private Vector3 spawnCenter = Vector3.zero;
     [SerializeField] private Vector3 spawnAreaSize = new Vector3(12f, 5f, 4f);
@@ -55,7 +55,7 @@ public class APIManager : MonoBehaviour
             return;
         }
 
-        pollingRoutine = StartCoroutine(PollEncounters());
+        pollingRoutine = StartCoroutine(PollProfiles());
     }
 
     private void OnDisable()
@@ -67,20 +67,20 @@ public class APIManager : MonoBehaviour
         }
     }
 
-    private IEnumerator PollEncounters()
+    private IEnumerator PollProfiles()
     {
         while (enabled)
         {
-            yield return FetchEncounters();
+            yield return FetchProfiles();
 
             float waitSeconds = Mathf.Max(1f, serverConfig.PollingIntervalSeconds);
             yield return new WaitForSeconds(waitSeconds);
         }
     }
 
-    private IEnumerator FetchEncounters()
+    private IEnumerator FetchProfiles()
     {
-        yield return apiClient.GetEncounters(HandleReceivedEncounters, _ => { });
+        yield return apiClient.GetRecentProfiles(HandleReceivedEncounters, _ => { });
     }
 
     private void HandleReceivedEncounters(Encounter[] encounters)
@@ -93,7 +93,7 @@ public class APIManager : MonoBehaviour
     {
         if (serverConfig == null ||
             string.IsNullOrWhiteSpace(serverConfig.BaseUrl) ||
-            string.IsNullOrWhiteSpace(serverConfig.EncountersPath))
+            string.IsNullOrWhiteSpace(serverConfig.ProfilesPath))
         {
             Debug.LogError(
                 "[DOOH API] Server configuration is missing.\n" +
@@ -104,7 +104,7 @@ public class APIManager : MonoBehaviour
 
         apiClient = new DOOHApiClient(serverConfig);
         Debug.Log($"[DOOH API] Environment: {serverConfig.EnvironmentName}\n" +
-                  $"[DOOH API] Endpoint: {apiClient.EncountersUrl}");
+                  $"[DOOH API] Endpoint: {apiClient.ProfilesUrl}");
         return true;
     }
 

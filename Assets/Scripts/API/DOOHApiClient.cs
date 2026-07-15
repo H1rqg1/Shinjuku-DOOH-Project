@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -13,11 +14,11 @@ public sealed class DOOHApiClient
         this.serverConfig = serverConfig;
     }
 
-    public string EncountersUrl => BuildEndpointUrl(serverConfig.BaseUrl, serverConfig.EncountersPath);
+    public string ProfilesUrl => BuildEndpointUrl(serverConfig.BaseUrl, serverConfig.ProfilesPath);
 
-    public IEnumerator GetEncounters(Action<Encounter[]> onSuccess, Action<string> onError)
+    public IEnumerator GetRecentProfiles(Action<Encounter[]> onSuccess, Action<string> onError)
     {
-        string url = EncountersUrl;
+        string url = ProfilesUrl;
 
         using (UnityWebRequest request = UnityWebRequest.Get(url))
         {
@@ -43,7 +44,7 @@ public sealed class DOOHApiClient
                 yield break;
             }
 
-            if (!TryParseEncounters(request.downloadHandler.text, out Encounter[] encounters, out string parseError))
+            if (!TryParseRecentProfiles(request.downloadHandler.text, out Encounter[] encounters, out string parseError))
             {
                 string message =
                     $"[DOOH API] Response parse failed\n" +
@@ -131,7 +132,7 @@ public sealed class DOOHApiClient
         return normalizedBaseUrl + normalizedPath;
     }
 
-    private static bool TryParseEncounters(string json, out Encounter[] encounters, out string error)
+    private static bool TryParseRecentProfiles(string json, out Encounter[] encounters, out string error)
     {
         encounters = Array.Empty<Encounter>();
         error = string.Empty;
@@ -144,20 +145,25 @@ public sealed class DOOHApiClient
 
         try
         {
-            string normalizedJson = json.Trim();
-            if (normalizedJson.StartsWith("[", StringComparison.Ordinal))
+            RecentProfileList response = JsonUtility.FromJson<RecentProfileList>(json.Trim());
+            if (response == null || response.profiles == null)
             {
-                normalizedJson = $"{{\"encounters\":{normalizedJson}}}";
-            }
-
-            EncounterList response = JsonUtility.FromJson<EncounterList>(normalizedJson);
-            if (response == null || response.encounters == null)
-            {
-                error = "The response does not contain an encounters array.";
+                error = "The response does not contain a profiles array.";
                 return false;
             }
 
-            encounters = response.encounters;
+            List<Encounter> convertedProfiles = new List<Encounter>();
+            foreach (RecentProfile profile in response.profiles)
+            {
+                if (profile == null || string.IsNullOrWhiteSpace(profile.user_id))
+                {
+                    continue;
+                }
+
+                convertedProfiles.Add(profile.ToEncounter());
+            }
+
+            encounters = convertedProfiles.ToArray();
             return true;
         }
         catch (Exception exception)

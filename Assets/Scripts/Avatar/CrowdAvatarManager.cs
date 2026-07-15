@@ -11,6 +11,7 @@ public class CrowdAvatarManager : MonoBehaviour
 
     [Header("Display")]
     [SerializeField] private int maxAvatarCount = 30;
+    [SerializeField, Min(1f)] private float userAvatarStaySeconds = 600f;
 
     [Header("CPU Fallback")]
     [SerializeField] private bool showCpuAvatarsWhenEmpty = true;
@@ -66,7 +67,7 @@ public class CrowdAvatarManager : MonoBehaviour
                 continue;
             }
 
-            SpawnAvatar(encounter, false, 10f);
+            SpawnAvatar(encounter, false, userAvatarStaySeconds);
         }
 
         if (showCpuAvatarsWhenEmpty && !HasActiveUserAvatars())
@@ -118,7 +119,7 @@ public class CrowdAvatarManager : MonoBehaviour
         if (avatarScript != null)
         {
             avatarScript.ApplyCostume(costume);
-            avatarScript.SetPlayerName(displayTargetId);
+            avatarScript.SetPlayerInfo(displayTargetId, ResolveMessageTexts(data));
         }
 
         activeAvatarsQueue.Enqueue(obj);
@@ -172,6 +173,41 @@ public class CrowdAvatarManager : MonoBehaviour
         }
 
         return costume;
+    }
+
+    private List<string> ResolveMessageTexts(Encounter data)
+    {
+        List<string> messageTexts = new List<string>();
+        if (data == null || data.message_ids == null || data.message_ids.Length == 0)
+        {
+            return messageTexts;
+        }
+
+        if (avatarCatalog == null)
+        {
+            if (!hasWarnedMissingCatalog)
+            {
+                Debug.LogWarning("AvatarCatalog is not assigned. Message ids cannot be resolved.");
+                hasWarnedMissingCatalog = true;
+            }
+
+            return messageTexts;
+        }
+
+        foreach (string messageId in data.message_ids)
+        {
+            if (avatarCatalog.TryGetMessage(messageId, out MessageEntry message) &&
+                message != null &&
+                !string.IsNullOrWhiteSpace(message.text))
+            {
+                messageTexts.Add(message.text);
+                continue;
+            }
+
+            Debug.LogWarning($"Message id is not registered in AvatarCatalog: {messageId}");
+        }
+
+        return messageTexts;
     }
 
     private void EnsureCpuAvatars()

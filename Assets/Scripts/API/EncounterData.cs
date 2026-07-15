@@ -12,6 +12,7 @@ public class Encounter
     public string timestamp;
 
     public string costume_id;
+    public string avatar_code;
     public string[] message_ids;
 
     public string GetDisplayKey()
@@ -90,4 +91,39 @@ public class Encounter
 public class EncounterList
 {
     public Encounter[] encounters;
+}
+
+[Serializable]
+public class RecentProfile
+{
+    public string user_id;
+    public string display_name;
+    public string avatar_code;
+    public string costume_id;
+    public string[] message_ids;
+    public string[] interests;
+    public string last_seen_at;
+
+    public Encounter ToEncounter()
+    {
+        string displayTargetId = string.IsNullOrWhiteSpace(display_name)
+            ? user_id
+            : display_name;
+
+        return new Encounter
+        {
+            my_id = user_id,
+            target_id = displayTargetId,
+            timestamp = last_seen_at,
+            costume_id = costume_id,
+            avatar_code = avatar_code,
+            message_ids = message_ids ?? Array.Empty<string>()
+        };
+    }
+}
+
+[Serializable]
+public class RecentProfileList
+{
+    public RecentProfile[] profiles;
 }
