@@ -135,3 +135,7 @@ Unity側では `DOOHStatusDisplay` に `DetectedCountText` と `CurrentTimeText`
 - Kept the Unity `/stats` response contract unchanged. The Cloudflare API now
   defines `daily_detected_count` as unique accounts that completed full profile
   save during the rolling 24-hour window.
+- Applied D1 migrations `0003` and `0004`, deployed the Pages Functions to the
+  production `main` environment, and verified the public `/stats` response.
+- Confirmed in the Full HD Unity Game view that the production count displayed
+  `今日の新宿の人数：35` and that dark usernames remained readable.
