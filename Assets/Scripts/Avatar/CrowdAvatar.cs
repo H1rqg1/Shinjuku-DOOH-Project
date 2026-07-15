@@ -4,17 +4,8 @@ using UnityEngine;
 
 public class CrowdAvatar : MonoBehaviour
 {
-    private static readonly string[] JapaneseFontNames =
-    {
-        "Yu Gothic UI",
-        "Yu Gothic",
-        "Meiryo"
-    };
-
-    private static TMP_FontAsset runtimeJapaneseFont;
-    private static bool hasTriedLoadingJapaneseFont;
-
     public TextMesh nameText;
+    [SerializeField] private TMP_FontAsset japaneseFontAsset;
 
     [Header("Sprites")]
     public SpriteRenderer spriteRenderer;
@@ -35,6 +26,7 @@ public class CrowdAvatar : MonoBehaviour
     private float waitTimer;
     private bool isWalking;
     private TMP_Text tmpNameText;
+    private AvatarSpeechBubble speechBubble;
 
     private void Awake()
     {
@@ -49,6 +41,12 @@ public class CrowdAvatar : MonoBehaviour
         }
 
         tmpNameText = GetComponentInChildren<TMP_Text>();
+        speechBubble = GetComponent<AvatarSpeechBubble>();
+        if (speechBubble == null)
+        {
+            speechBubble = gameObject.AddComponent<AvatarSpeechBubble>();
+        }
+
         ConfigurePlayerLabel();
     }
 
@@ -144,20 +142,19 @@ public class CrowdAvatar : MonoBehaviour
 
     public void SetPlayerInfo(string playerName, IReadOnlyList<string> messages)
     {
-        string plainLabel = playerName;
-        if (messages != null && messages.Count > 0)
-        {
-            plainLabel += "\n" + string.Join("\n", messages);
-        }
-
         if (nameText != null)
         {
-            nameText.text = plainLabel;
+            nameText.text = playerName;
         }
 
         if (tmpNameText != null)
         {
-            tmpNameText.text = BuildRichLabel(playerName, messages);
+            tmpNameText.text = $"<b>{EscapeRichText(playerName)}</b>";
+        }
+
+        if (speechBubble != null)
+        {
+            speechBubble.Configure(japaneseFontAsset, messages, tmpNameText, spriteRenderer);
         }
     }
 
@@ -168,10 +165,9 @@ public class CrowdAvatar : MonoBehaviour
             return;
         }
 
-        TMP_FontAsset japaneseFont = GetRuntimeJapaneseFont();
-        if (japaneseFont != null)
+        if (japaneseFontAsset != null)
         {
-            tmpNameText.font = japaneseFont;
+            tmpNameText.font = japaneseFontAsset;
         }
 
         tmpNameText.richText = true;
@@ -183,47 +179,20 @@ public class CrowdAvatar : MonoBehaviour
         tmpNameText.outlineColor = new Color32(27, 39, 51, 255);
         tmpNameText.outlineWidth = 0.16f;
 
+        if (spriteRenderer != null)
+        {
+            Renderer labelRenderer = tmpNameText.GetComponent<Renderer>();
+            if (labelRenderer != null)
+            {
+                labelRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
+                labelRenderer.sortingOrder = spriteRenderer.sortingOrder + 22;
+            }
+        }
+
         RectTransform labelTransform = tmpNameText.rectTransform;
         labelTransform.anchoredPosition = new Vector2(0f, 5.5f);
-        labelTransform.sizeDelta = new Vector2(26f, 10f);
-        labelTransform.pivot = new Vector2(0.5f, 0f);
-    }
-
-    private static TMP_FontAsset GetRuntimeJapaneseFont()
-    {
-        if (runtimeJapaneseFont != null || hasTriedLoadingJapaneseFont)
-        {
-            return runtimeJapaneseFont;
-        }
-
-        hasTriedLoadingJapaneseFont = true;
-        Font sourceFont = Font.CreateDynamicFontFromOSFont(JapaneseFontNames, 48);
-        if (sourceFont == null)
-        {
-            Debug.LogWarning("A Japanese system font was not found. Avatar messages may use fallback glyphs.");
-            return null;
-        }
-
-        runtimeJapaneseFont = TMP_FontAsset.CreateFontAsset(sourceFont);
-        runtimeJapaneseFont.name = "DOOH Runtime Japanese Font";
-        return runtimeJapaneseFont;
-    }
-
-    private static string BuildRichLabel(string playerName, IReadOnlyList<string> messages)
-    {
-        string label = $"<size=120%><b>{EscapeRichText(playerName)}</b></size>";
-        if (messages == null || messages.Count == 0)
-        {
-            return label;
-        }
-
-        string[] safeMessages = new string[messages.Count];
-        for (int i = 0; i < messages.Count; i++)
-        {
-            safeMessages[i] = EscapeRichText(messages[i]);
-        }
-
-        return label + "\n<size=78%>" + string.Join("\n", safeMessages) + "</size>";
+        labelTransform.sizeDelta = new Vector2(22f, 4f);
+        labelTransform.pivot = new Vector2(0.5f, 0.5f);
     }
 
     private static string EscapeRichText(string value)

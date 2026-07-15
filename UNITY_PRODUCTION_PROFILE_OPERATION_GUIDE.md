@@ -104,7 +104,10 @@ Gameビューで次を確認する。
 
 - 登録ユーザーの名前が表示される。
 - 日本語の一言が四角記号にならず表示される。
-- 名前と一言がアバター上部にまとまり、アバター本体と重ならない。
+- 名前は常時表示され、一言は吹き出しに1件ずつランダム表示される。
+- 吹き出しの表示開始、表示時間、次回表示までの間隔が毎回変化する。
+- 吹き出しは同時に最大2件まで表示され、長い一言は2行以内に収まる。
+- `今日の新宿の人数` と `現在時刻` が日本語フォントで表示される。
 - `costume_id` に対応した衣装が表示される。
 - 登録ユーザーが表示されたらCPUアバターが消える。
 - Consoleに `Request failed`、`Response parse failed`、未登録ID警告がない。
@@ -155,8 +158,8 @@ $response.profiles |
 ### 日本語が四角で表示される
 
 1. Unityを終了して開き直す。
-2. Consoleに `A Japanese system font was not found` がないか確認する。
-3. Windowsに `Yu Gothic UI`、`Yu Gothic`、`Meiryo` のいずれかが存在するか確認する。
+2. `Assets/Fonts/NotoSansJP-VariableFont_wght SDF.asset` が存在するか確認する。
+3. `Avatar` Prefabと `DOOHStatusDisplay` のFont Assetに同フォントが設定されているか確認する。
 
 ### 一言だけ表示されない
 
@@ -174,6 +177,7 @@ WebとUnityで新しいIDが追加されていないか確認する。
 - `/profiles/recent` にテストプロフィールが存在する。
 - Unity ConsoleにProductionのURLが表示される。
 - 日本語の名前と一言が文字化けせず表示される。
+- 一言が吹き出しでランダムなタイミングに表示される。
 - Webで選択した衣装と一言がUnity表示に一致する。
 - 登録ユーザーが約10分表示される。
 - CPUアバターだけが約30秒で入れ替わる。

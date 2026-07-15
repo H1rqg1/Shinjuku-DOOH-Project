@@ -10,8 +10,9 @@ public class DOOHStatusDisplay : MonoBehaviour
     [Header("Text")]
     [SerializeField] private TMP_Text detectedCountText;
     [SerializeField] private TMP_Text currentTimeText;
-    [SerializeField] private string countLabel = "Today's count in Shinjuku";
-    [SerializeField] private string timeLabel = "Time";
+    [SerializeField] private TMP_FontAsset japaneseFontAsset;
+    [SerializeField] private string countLabel = "今日の新宿の人数";
+    [SerializeField] private string timeLabel = "現在時刻";
 
     private Coroutine pollingRoutine;
     private bool hasWarnedMissingDetectedText;
@@ -69,7 +70,7 @@ public class DOOHStatusDisplay : MonoBehaviour
     {
         if (detectedCountText != null)
         {
-            detectedCountText.text = $"{countLabel}: {stats.daily_detected_count}";
+            detectedCountText.text = $"{countLabel}：{stats.daily_detected_count}";
         }
         else if (!hasWarnedMissingDetectedText)
         {
@@ -80,7 +81,7 @@ public class DOOHStatusDisplay : MonoBehaviour
         if (currentTimeText != null)
         {
             string timeText = string.IsNullOrWhiteSpace(stats.time_jst) ? "--:--" : stats.time_jst;
-            currentTimeText.text = $"{timeLabel}: {timeText}";
+            currentTimeText.text = $"{timeLabel}：{timeText}";
         }
         else if (!hasWarnedMissingTimeText)
         {
@@ -93,20 +94,25 @@ public class DOOHStatusDisplay : MonoBehaviour
     {
         if (detectedCountText != null)
         {
-            detectedCountText.text = $"{countLabel}: 0";
+            detectedCountText.text = $"{countLabel}：0";
         }
 
         if (currentTimeText != null)
         {
-            currentTimeText.text = $"{timeLabel}: --:--";
+            currentTimeText.text = $"{timeLabel}：--:--";
         }
     }
 
-    private static void ConfigureText(TMP_Text text)
+    private void ConfigureText(TMP_Text text)
     {
         if (text == null)
         {
             return;
+        }
+
+        if (japaneseFontAsset != null)
+        {
+            text.font = japaneseFontAsset;
         }
 
         text.enableAutoSizing = true;

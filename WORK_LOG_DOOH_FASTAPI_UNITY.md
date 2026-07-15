@@ -108,4 +108,22 @@ http://127.0.0.1:8000/stats
 - Added `UNITY_PRODUCTION_PROFILE_OPERATION_GUIDE.md` with copy-paste-ready
   production verification, ten-minute lifetime, and troubleshooting steps.
 
+## 2026-07-15 Japanese Status And Random Speech Bubbles
+
+- Applied the imported Noto Sans JP TextMeshPro font asset to status text,
+  avatar names, and user messages instead of creating an OS font at runtime.
+- Changed status labels to `今日の新宿の人数` and `現在時刻` with Japanese
+  punctuation.
+- Kept avatar names visible and moved one randomly selected message at a time
+  into a generated speech bubble.
+- Randomized the initial delay, visible duration, and interval between speech
+  bubbles independently for each avatar.
+- Limited visible bubbles to two at a time and wrapped long messages to reduce
+  overlap during live operation.
+- Verified the scene in Unity 6.3 LTS at Full HD: Japanese status text and QR
+  code rendered correctly, messages switched at random, and no more than two
+  bubbles were visible at once.
+- Unity batch compilation completed successfully. The only compiler warning is
+  the pre-existing obsolete `FindObjectsOfType` call in `AvatarCounter.cs`.
+
 Unity側では `DOOHStatusDisplay` に `DetectedCountText` と `CurrentTimeText` を割り当てる。
