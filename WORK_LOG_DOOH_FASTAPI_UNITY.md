@@ -105,5 +105,7 @@ http://127.0.0.1:8000/stats
   rotate frequently.
 - Unity 6000.3.11f1 batch compilation completed successfully; the existing
   unrelated AvatarCounter deprecation warning remains non-blocking.
+- Added `UNITY_PRODUCTION_PROFILE_OPERATION_GUIDE.md` with copy-paste-ready
+  production verification, ten-minute lifetime, and troubleshooting steps.
 
 Unity側では `DOOHStatusDisplay` に `DetectedCountText` と `CurrentTimeText` を割り当てる。
