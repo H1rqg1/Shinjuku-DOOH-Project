@@ -127,3 +127,11 @@ http://127.0.0.1:8000/stats
   the pre-existing obsolete `FindObjectsOfType` call in `AvatarCounter.cs`.
 
 Unity側では `DOOHStatusDisplay` に `DetectedCountText` と `CurrentTimeText` を割り当てる。
+
+## 2026-07-15 Username Contrast And Profile Save Count
+
+- Changed avatar usernames from white to bold dark text with a light outline so
+  they remain readable over the sky, trees, and ground.
+- Kept the Unity `/stats` response contract unchanged. The Cloudflare API now
+  defines `daily_detected_count` as unique accounts that completed full profile
+  save during the rolling 24-hour window.

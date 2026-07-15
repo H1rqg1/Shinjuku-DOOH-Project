@@ -175,9 +175,10 @@ public class CrowdAvatar : MonoBehaviour
         tmpNameText.enableAutoSizing = true;
         tmpNameText.fontSizeMin = 14f;
         tmpNameText.fontSizeMax = 30f;
-        tmpNameText.color = Color.white;
-        tmpNameText.outlineColor = new Color32(27, 39, 51, 255);
-        tmpNameText.outlineWidth = 0.16f;
+        tmpNameText.fontStyle = FontStyles.Bold;
+        tmpNameText.color = new Color32(24, 32, 38, 255);
+        tmpNameText.outlineColor = new Color32(255, 255, 255, 235);
+        tmpNameText.outlineWidth = 0.2f;
 
         if (spriteRenderer != null)
         {
