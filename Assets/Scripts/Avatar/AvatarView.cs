@@ -34,10 +34,12 @@ public class AvatarView : MonoBehaviour
         gameObject.name = $"Avatar_{targetId}";
         SetLabel(targetId);
 
-        if (spriteRenderer != null)
+        if (spriteRenderer != null && lifeRoutine == null)
         {
             originalSpriteColor = spriteRenderer.color;
         }
+
+        SetAlpha(1f);
 
         if (lifeRoutine != null)
         {

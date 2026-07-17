@@ -19,7 +19,14 @@ public class CrowdAvatarManager : MonoBehaviour
     [SerializeField] private float cpuAvatarStaySeconds = 30f;
     [SerializeField] private string cpuAvatarIdPrefix = "CPU";
 
-    private readonly HashSet<string> processedEncounters = new HashSet<string>();
+    private sealed class ActiveUserAvatar
+    {
+        public GameObject Object;
+        public string SavedAt;
+    }
+
+    private static readonly System.TimeSpan JstOffset = System.TimeSpan.FromHours(9);
+    private readonly Dictionary<string, ActiveUserAvatar> activeUserAvatarsById = new Dictionary<string, ActiveUserAvatar>();
     private readonly Queue<GameObject> activeAvatarsQueue = new Queue<GameObject>();
     private readonly List<GameObject> activeUserAvatars = new List<GameObject>();
     private readonly List<GameObject> activeCpuAvatars = new List<GameObject>();
@@ -53,22 +60,45 @@ public class CrowdAvatarManager : MonoBehaviour
 
         CleanupDestroyedAvatars();
 
+        HashSet<string> receivedUserIds = new HashSet<string>();
+
         foreach (Encounter encounter in encounters)
         {
-            if (encounter == null)
+            if (encounter == null || !IsCurrentJstDate(encounter.timestamp))
             {
                 continue;
             }
 
-            encounter.EnsureDisplayTargetId();
-            string uniqueKey = encounter.GetDisplayKey();
-            if (!processedEncounters.Add(uniqueKey))
+            string userId = NormalizeUserId(encounter.my_id);
+            if (string.IsNullOrEmpty(userId) || !receivedUserIds.Add(userId))
             {
                 continue;
             }
 
-            SpawnAvatar(encounter, false, userAvatarStaySeconds);
+            if (activeUserAvatarsById.TryGetValue(userId, out ActiveUserAvatar activeAvatar) &&
+                activeAvatar.Object != null)
+            {
+                if (!string.Equals(activeAvatar.SavedAt, encounter.timestamp, System.StringComparison.Ordinal))
+                {
+                    ConfigureUserAvatar(activeAvatar.Object, encounter, userAvatarStaySeconds);
+                    activeAvatar.SavedAt = encounter.timestamp;
+                }
+
+                continue;
+            }
+
+            GameObject avatarObject = SpawnAvatar(encounter, false, userAvatarStaySeconds);
+            if (avatarObject != null)
+            {
+                activeUserAvatarsById[userId] = new ActiveUserAvatar
+                {
+                    Object = avatarObject,
+                    SavedAt = encounter.timestamp
+                };
+            }
         }
+
+        RemoveUserAvatarsMissingFrom(receivedUserIds);
 
         if (showCpuAvatarsWhenEmpty && !HasActiveUserAvatars())
         {
@@ -76,12 +106,12 @@ public class CrowdAvatarManager : MonoBehaviour
         }
     }
 
-    private void SpawnAvatar(Encounter data, bool isCpuAvatar, float displaySeconds)
+    private GameObject SpawnAvatar(Encounter data, bool isCpuAvatar, float displaySeconds)
     {
         if (avatarPrefab == null || characterRoot == null)
         {
             Debug.LogWarning("avatarPrefab or characterRoot is not assigned.");
-            return;
+            return null;
         }
 
         CleanupDestroyedAvatars();
@@ -100,26 +130,27 @@ public class CrowdAvatarManager : MonoBehaviour
             Random.Range(2f, 10f)
         );
 
-        AvatarView avatarView = obj.GetComponent<AvatarView>();
-        if (avatarView == null)
-        {
-            avatarView = obj.AddComponent<AvatarView>();
-        }
-
-        avatarView.Initialize(data, displaySeconds);
-
         if (obj.GetComponent<BillboardToCamera>() == null)
         {
             obj.AddComponent<BillboardToCamera>();
         }
 
-        CostumeEntry costume = ResolveCostume(data, isCpuAvatar, usePrefabDefaultCostume);
-
-        CrowdAvatar avatarScript = obj.GetComponent<CrowdAvatar>();
-        if (avatarScript != null)
+        if (isCpuAvatar)
         {
-            avatarScript.ApplyCostume(costume);
-            avatarScript.SetPlayerInfo(displayTargetId, ResolveMessageTexts(data));
+            AvatarView avatarView = ResolveAvatarView(obj);
+            avatarView.Initialize(data, displaySeconds);
+
+            CostumeEntry costume = ResolveCostume(data, true, usePrefabDefaultCostume);
+            CrowdAvatar avatarScript = obj.GetComponent<CrowdAvatar>();
+            if (avatarScript != null)
+            {
+                avatarScript.ApplyCostume(costume);
+                avatarScript.SetPlayerInfo(displayTargetId, ResolveMessageTexts(data));
+            }
+        }
+        else
+        {
+            ConfigureUserAvatar(obj, data, displaySeconds);
         }
 
         activeAvatarsQueue.Enqueue(obj);
@@ -140,6 +171,76 @@ public class CrowdAvatarManager : MonoBehaviour
                 Destroy(oldestAvatar);
             }
         }
+
+        return obj;
+    }
+
+    private void ConfigureUserAvatar(GameObject avatarObject, Encounter data, float displaySeconds)
+    {
+        if (avatarObject == null || data == null)
+        {
+            return;
+        }
+
+        string displayTargetId = data.EnsureDisplayTargetId();
+        ResolveAvatarView(avatarObject).Initialize(data, displaySeconds);
+
+        CrowdAvatar avatarScript = avatarObject.GetComponent<CrowdAvatar>();
+        if (avatarScript == null)
+        {
+            return;
+        }
+
+        CostumeEntry costume = ResolveCostume(data, false, data.UsesPrefabDefaultAvatar());
+        avatarScript.ApplyCostume(costume);
+        avatarScript.SetPlayerInfo(displayTargetId, ResolveMessageTexts(data));
+    }
+
+    private static AvatarView ResolveAvatarView(GameObject avatarObject)
+    {
+        AvatarView avatarView = avatarObject.GetComponent<AvatarView>();
+        return avatarView != null ? avatarView : avatarObject.AddComponent<AvatarView>();
+    }
+
+    private void RemoveUserAvatarsMissingFrom(HashSet<string> receivedUserIds)
+    {
+        List<string> removedUserIds = new List<string>();
+        foreach (KeyValuePair<string, ActiveUserAvatar> pair in activeUserAvatarsById)
+        {
+            if (pair.Value.Object != null && receivedUserIds.Contains(pair.Key))
+            {
+                continue;
+            }
+
+            if (pair.Value.Object != null)
+            {
+                activeUserAvatars.Remove(pair.Value.Object);
+                Destroy(pair.Value.Object);
+            }
+
+            removedUserIds.Add(pair.Key);
+        }
+
+        foreach (string userId in removedUserIds)
+        {
+            activeUserAvatarsById.Remove(userId);
+        }
+    }
+
+    private static string NormalizeUserId(string userId)
+    {
+        return string.IsNullOrWhiteSpace(userId) ? string.Empty : userId.Trim();
+    }
+
+    private static bool IsCurrentJstDate(string timestamp)
+    {
+        if (!System.DateTimeOffset.TryParse(timestamp, out System.DateTimeOffset savedAt))
+        {
+            return false;
+        }
+
+        System.DateTime currentJstDate = System.DateTimeOffset.UtcNow.ToOffset(JstOffset).Date;
+        return savedAt.ToOffset(JstOffset).Date == currentJstDate;
     }
 
     private CostumeEntry ResolveCostume(Encounter data, bool isCpuAvatar, bool usePrefabDefaultCostume)
@@ -273,6 +374,20 @@ public class CrowdAvatarManager : MonoBehaviour
 
         RemoveDestroyed(activeUserAvatars);
         RemoveDestroyed(activeCpuAvatars);
+
+        List<string> destroyedUserIds = new List<string>();
+        foreach (KeyValuePair<string, ActiveUserAvatar> pair in activeUserAvatarsById)
+        {
+            if (pair.Value.Object == null)
+            {
+                destroyedUserIds.Add(pair.Key);
+            }
+        }
+
+        foreach (string userId in destroyedUserIds)
+        {
+            activeUserAvatarsById.Remove(userId);
+        }
     }
 
     private static void RemoveDestroyed(List<GameObject> avatars)
